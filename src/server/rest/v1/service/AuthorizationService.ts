@@ -49,6 +49,7 @@ import User from '../../../../types/User';
 import UserToken from '../../../../types/UserToken';
 import Utils from '../../../../utils/Utils';
 import _ from 'lodash';
+import { HttpReservationGetRequest } from '../../../../types/requests/HttpReservationRequest';
 
 const MODULE_NAME = 'AuthorizationService';
 
@@ -1518,6 +1519,20 @@ export default class AuthorizationService {
       tenant, userToken, Entity.SITE_AREA, Action.LIST, authorizationFilter);
     statistics.canExport = await AuthorizationService.canPerformAuthorizationAction(
       tenant, userToken, Entity.STATISTIC, Action.EXPORT, authorizationFilter);
+  }
+
+  public static async checkAndGetReservationsAuthorizations(tenant: Tenant, userToken: UserToken, authAction: Action,
+      filteredRequest?: Partial<HttpReservationGetRequest>, failsWithException = true): Promise<AuthorizationFilter> {
+    const authorizations: AuthorizationFilter = {
+      filters: {},
+      dataSources: new Map(),
+      projectFields: [],
+      authorized: false
+    };
+    // Check static & dynamic authorization
+    await this.canPerformAuthorizationAction(tenant, userToken, Entity.RESERVATION, authAction,
+      authorizations, filteredRequest, null, failsWithException);
+    return authorizations;
   }
 
   private static filterProjectFields(authFields: string[], httpProjectField: string): string[] {

@@ -17,6 +17,7 @@ import RegistrationToken from './RegistrationToken';
 import { SettingDB } from './Setting';
 import SiteArea from './SiteArea';
 import Tag from './Tag';
+import Reservation from './Reservation';
 
 export interface DeletedResult {
   acknowledged?: boolean;
@@ -198,4 +199,7 @@ export interface StatisticDataResult extends DataResult<any> {
   canListSites?: boolean;
   canListSiteAreas?: boolean;
   canExport?: boolean;
+}
+
+export interface ReservationDataResult extends DataResult<Reservation> {
 }

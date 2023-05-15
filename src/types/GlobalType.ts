@@ -17,6 +17,7 @@ import { PerformanceRecordGroup } from './Performance';
 import PricingDefinition from './Pricing';
 import RefundReport from './Refund';
 import RegistrationToken from './RegistrationToken';
+import Reservation from './Reservation';
 import { ServerType } from './Server';
 import { Setting } from './Setting';
 import SiteArea from './SiteArea';
@@ -90,7 +91,7 @@ export enum ImportStatus {
   ERROR = 'E',
 }
 
-export type EntityData = Car|User|Company|Site|SiteArea|Tag|CarCatalog|ChargingStation|PricingDefinition|Log|RegistrationToken|BillingInvoice|BillingPaymentMethod|Setting|BillingAccount|ChargingProfile|Connector|Transaction|TransactionStop|BillingTransfer|BillingTax|RefundReport|UserSite|SiteUser|ChargingStationTemplate|OCPIEndpoint;
+export type EntityData = Car|User|Company|Site|SiteArea|Tag|CarCatalog|ChargingStation|PricingDefinition|Log|RegistrationToken|BillingInvoice|BillingPaymentMethod|Setting|BillingAccount|ChargingProfile|Connector|Transaction|TransactionStop|BillingTransfer|BillingTax|RefundReport|UserSite|SiteUser|ChargingStationTemplate|OCPIEndpoint|Reservation;
 
 interface TSGlobal extends Global {
   tenantIdMap: Map<string,string>;

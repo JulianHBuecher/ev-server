@@ -4,7 +4,7 @@ import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import { HttpChargingStationCompositeScheduleGetRequest, HttpChargingStationConfigurationChangeRequest, HttpChargingStationLimitPowerRequest, HttpChargingStationParamsUpdateRequest, HttpChargingStationTransactionStartRequest, HttpChargingStationTransactionStopRequest, HttpChargingStationsGetRequest } from '../../../../types/requests/HttpChargingStationRequest';
 import { NextFunction, Request, Response } from 'express';
 import { OCPICommandResponse, OCPICommandResponseType } from '../../../../types/ocpi/OCPICommandResponse';
-import { OCPPChangeConfigurationResponse, OCPPConfigurationStatus, OCPPGetCompositeScheduleResponse, OCPPStatus, OCPPUnlockStatus } from '../../../../types/ocpp/OCPPClient';
+import { OCPPCancelReservationStatus, OCPPChangeConfigurationResponse, OCPPConfigurationStatus, OCPPGetCompositeScheduleResponse, OCPPStatus, OCPPUnlockStatus } from '../../../../types/ocpp/OCPPClient';
 import Tenant, { TenantComponents } from '../../../../types/Tenant';
 
 import AppAuthError from '../../../../exception/AppAuthError';
@@ -54,6 +54,7 @@ import UserStorage from '../../../../storage/mongodb/UserStorage';
 import UserToken from '../../../../types/UserToken';
 import Utils from '../../../../utils/Utils';
 import UtilsService from './UtilsService';
+import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
 
 const MODULE_NAME = 'ChargingStationService';
 
@@ -584,10 +585,21 @@ export default class ChargingStationService {
     if (!chargingStationClient) {
       throw new BackendError({
         action,
-        module: MODULE_NAME, method: 'handleReserveNow',
+        module: MODULE_NAME, method: this.handleReserveNow.name,
         message: 'Charging Station is not connected to the backend',
       });
     }
+    await ReservationStorage.createReservation(req.tenant,
+      {
+        id: filteredRequest.args.reservationId,
+        user: req.user.user,
+        chargeBoxId: chargingStation.id,
+        connectorId: filteredRequest.args.connectorId,
+        expiryDate: filteredRequest.args.expiryDate,
+        tagId: filteredRequest.args.idTag,
+        parentTagId: filteredRequest.args.parentIdTag
+      }
+    );
     res.json(await chargingStationClient.reserveNow(filteredRequest.args));
     next();
   }
@@ -599,17 +611,20 @@ export default class ChargingStationService {
     const filteredRequest = ChargingStationValidatorRest.getInstance().validateChargingStationActionReservationCancelReq(req.body);
     // Check and get dynamic auth
     const chargingStation = await UtilsService.checkAndGetChargingStationAuthorization(
-      req.tenant, req.user, filteredRequest.chargingStationID, Action.RESERVE_NOW, action, null, { withSiteArea: true });
+      req.tenant, req.user, filteredRequest.chargingStationID, Action.CANCEL_RESERVATION, action, null, { withSiteArea: true });
     // Get the OCPP Client
     const chargingStationClient = await ChargingStationClientFactory.getChargingStationClient(req.tenant, chargingStation);
     if (!chargingStationClient) {
       throw new BackendError({
         action,
-        module: MODULE_NAME, method: 'handleCancelReservation',
+        module: MODULE_NAME, method: this.handleCancelReservation.name,
         message: 'Charging Station is not connected to the backend',
       });
     }
     const result = await chargingStationClient.cancelReservation(filteredRequest.args);
+    if (result.status === OCPPCancelReservationStatus.ACCEPTED) {
+      await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.reservationId,filteredRequest.chargingStationID);
+    }
     res.json(result);
     next();
   }

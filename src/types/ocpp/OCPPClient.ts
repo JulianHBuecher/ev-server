@@ -207,14 +207,14 @@ export interface OCPPUpdateFirmwareRequest {
 }
 
 export interface OCPPReserveNowRequest {
-  connectorId: string;
+  connectorId: number;
   expiryDate: Date;
   idTag: string;
   parentIdTag?: string;
   reservationId: number;
 }
 
-export enum OCPPReserveNowStatus {
+export enum OCPPReservationStatus {
   ACCEPTED = 'Accepted',
   FAULTED = 'Faulted',
   OCCUPIED = 'Occupied',
@@ -223,7 +223,7 @@ export enum OCPPReserveNowStatus {
 }
 
 export interface OCPPReserveNowResponse {
-  status: OCPPReserveNowStatus;
+  status: OCPPReservationStatus;
 }
 
 export interface OCPPCancelReservationRequest {

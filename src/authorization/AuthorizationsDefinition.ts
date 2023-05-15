@@ -1057,6 +1057,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       { resource: Entity.PAYMENT_METHOD, action: Action.LIST },
       { resource: Entity.PAYMENT_METHOD, action: [Action.READ, Action.CREATE, Action.DELETE] },
       { resource: Entity.SOURCE, action: Action.LIST },
+      {
+        resource: Entity.RESERVATION, action: [Action.READ,Action.CREATE,Action.UPDATE,Action.DELETE,Action.LIST],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: []
+          }
+        },
+        attributes: ['*']
+      },
     ]
   },
   basic: {
@@ -1773,6 +1784,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
         }
       },
       { resource: Entity.NOTIFICATION, action: Action.CREATE },
+      {
+        resource: Entity.RESERVATION, action: [Action.READ,Action.CREATE,Action.UPDATE,Action.DELETE],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: []
+          }
+        },
+        attributes: ['*']
+      },
     ]
   },
   demo: {
@@ -2158,6 +2180,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'instantWattsDC', 'instantWatts', 'instantWattsL1', 'instantWattsL2', 'instantWattsL3',
           'instantAmpsDC', 'instantAmps', 'instantAmpsL1', 'instantAmpsL2', 'instantAmpsL3',
         ]
+      },
+      {
+        resource: Entity.RESERVATION, action: [Action.READ,Action.CREATE,Action.UPDATE,Action.DELETE,Action.LIST],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: []
+          }
+        },
+        attributes: ['*']
       },
     ]
   },
@@ -3134,6 +3167,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
         },
       },
       { resource: Entity.SOURCE, action: Action.LIST },
+      {
+        resource: Entity.RESERVATION, action: [Action.READ,Action.CREATE,Action.UPDATE,Action.DELETE,Action.LIST],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: []
+          }
+        },
+        attributes: ['*']
+      },
     ]
   },
   siteOwner: {
@@ -3541,6 +3585,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'dimensions.parkingTime.active', 'dimensions.parkingTime.price', 'dimensions.parkingTime.stepSize', 'dimensions.parkingTime.pricedData',
         ],
       },
+      {
+        resource: Entity.RESERVATION, action: [Action.READ,Action.CREATE,Action.UPDATE,Action.DELETE,Action.LIST],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: []
+          }
+        },
+        attributes: ['*']
+      }
     ]
   },
 };

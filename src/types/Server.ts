@@ -496,7 +496,13 @@ export enum ServerAction {
 
   EXPORT_TO_CSV = 'ExportToCSV',
   SHIELD ='Shield',
-  RATE_LIMITER = 'RateLimiter'
+  RATE_LIMITER = 'RateLimiter',
+
+  RESERVATION = 'Reservation',
+  RESERVATIONS = 'Reservations',
+  RESERVATION_CREATE = 'ReservationCreate',
+  RESERVATION_UPDATE = 'ReservationUpdate',
+  RESERVATION_DELETE = 'ReservationDelete'
 }
 
 // RESTful API
@@ -736,6 +742,10 @@ export enum RESTServerRoute {
 
   // PRICING URLs for Non-CRUD operations
   REST_PRICING_MODEL_RESOLVE = 'pricing-model/resolve',
+
+  // RESERVATION URLs for CRUD operations
+  REST_RESERVATIONS = 'reservations',
+  REST_RESERVATION = 'reservations/:id'
 }
 
 export enum OCPIServerRoute {

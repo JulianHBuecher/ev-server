@@ -206,7 +206,7 @@ export interface HttpChargingStationFirmwareUpdateRequest extends HttpChargingSt
 
 export interface HttpChargingStationReserveNowRequest extends HttpChargingStationCommandRequest {
   args: {
-    connectorId: string;
+    connectorId: number;
     expiryDate: Date;
     idTag: string;
     parentIdTag?: string;

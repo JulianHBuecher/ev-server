@@ -1,0 +1,47 @@
+{
+  "$id": "reservation-create",
+  "title": "Create Reservation",
+  "type": "object",
+  "properties": {
+    "chargingStationID": {
+      "$ref": "chargingstation#/definitions/id"
+    },
+    "connectorId": {
+      "$ref": "chargingstation#/definitions/connector/properties/connectorId"
+    },
+    "fromDate": {
+      "type": "string",
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
+    },
+    "toDate": {
+      "type": "string",
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
+    },
+    "expiryDate": {
+      "type": "string",
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
+    },
+    "idTag": {
+      "$ref": "tag#/definitions/id"
+    },
+    "parentIdTag": {
+      "$ref": "tag#/definitions/id"
+    },
+    "reservationId": {
+      "type": "number",
+      "sanitize": "mongo"
+    }
+  },
+  "required": [
+    "connectorId",
+    "expiryDate",
+    "idTag",
+    "reservationId"
+  ]
+}
