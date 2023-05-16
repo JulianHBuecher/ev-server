@@ -1,6 +1,6 @@
 import { Filter, Sort } from 'mongodb';
 import { ReservationDataResult } from '../../types/DataResult';
-import global from '../../types/GlobalType';
+import global, { FilterParams } from '../../types/GlobalType';
 import Reservation from '../../types/Reservation';
 import Tenant from '../../types/Tenant';
 import DbParams from '../../types/database/DbParams';
@@ -15,7 +15,7 @@ const COLLECTION_NAME = 'reservations';
 export default class ReservationStorage {
 
   public static async getReservationById(tenant: Tenant, reservationId: number,
-      connectorId?: number, chargeBoxId?: string): Promise<Reservation> {
+      chargingStationId?: string, connectorId?: number, ): Promise<Reservation> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getReservationById.name;
     DatabaseUtils.checkTenantObject(tenant);
@@ -24,8 +24,8 @@ export default class ReservationStorage {
     if (!Utils.isNullOrUndefined(connectorId)) {
       filter.connectorId = connectorId;
     }
-    if (!Utils.isNullOrUndefined(chargeBoxId)) {
-      filter.chargeBoxId = chargeBoxId;
+    if (!Utils.isNullOrUndefined(chargingStationId)) {
+      filter.chargingStationId = chargingStationId;
     }
     const reservation = await global.database
       .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
@@ -35,7 +35,7 @@ export default class ReservationStorage {
   }
 
   public static async getReservations(tenant: Tenant,
-      params: { reservationIds?: number[]; chargingStationIDs?: string[]; connectorID?: number; } = {},
+      params: { reservationIds?: number[]; chargingStationIds?: string[]; connectorIds?: number[]; } = {},
       dbParams: DbParams): Promise<ReservationDataResult> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getReservations.name;
@@ -45,15 +45,15 @@ export default class ReservationStorage {
     dbParams.limit = Utils.checkRecordLimit(dbParams.limit);
     dbParams.skip = Utils.checkRecordSkip(dbParams.skip);
 
-    const filter: Filter<Reservation> = {};
+    const filter: FilterParams = {};
     if (params.reservationIds) {
       filter.id = { $in: params.reservationIds };
     } else {
-      if (params.chargingStationIDs) {
-        filter.chargeBoxId = { $in: params.chargingStationIDs };
+      if (params.chargingStationIds) {
+        filter.chargingStationId = { $in: params.chargingStationIds };
       }
-      if (params.connectorID) {
-        filter.connectorId = params.connectorID;
+      if (params.connectorIds) {
+        filter.connectorId = { $in: params.connectorIds };
       }
     }
     const reservationsCount = await global.database
@@ -68,7 +68,7 @@ export default class ReservationStorage {
     }
     const reservations = await global.database
       .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .find()
+      .find(filter)
       .sort(dbParams.sort as Sort)
       .limit(dbParams.limit)
       .skip(dbParams.skip)
@@ -142,7 +142,7 @@ export default class ReservationStorage {
     DatabaseUtils.checkTenantObject(tenant);
     const filter: Filter<Reservation> = { id: reservationId };
     if (!Utils.isNullOrUndefined(chargeBoxId)) {
-      filter.chargeBoxId = chargeBoxId;
+      filter.chargingStationId = chargeBoxId;
     }
     await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).deleteOne(filter);
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationId);

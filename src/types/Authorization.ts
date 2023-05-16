@@ -304,6 +304,7 @@ export interface BillingInvoiceAuthorizationActions extends AuthorizationActions
 
 export interface ChargingStationAuthorizationActions extends AuthorizationActions {
   canReserveNow?:boolean;
+  canCancelReservation?:boolean;
   canReset?:boolean;
   canClearCache?:boolean;
   canGetConfiguration?:boolean;

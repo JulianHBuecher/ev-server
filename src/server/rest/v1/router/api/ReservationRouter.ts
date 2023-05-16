@@ -1,10 +1,8 @@
 import { RESTServerRoute, ServerAction } from '../../../../../types/Server';
-import express, { NextFunction, Request, Response, Router } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 
-import ChargingStationService from '../../service/ChargingStationService';
-import RouterUtils from '../../../../../utils/RouterUtils';
-import TransactionService from '../../service/TransactionService';
 import ReservationService from '../../service/ReservationService';
+import RouterUtils from '../../../../../utils/RouterUtils';
 
 
 export default class ReservationRouter {
@@ -32,7 +30,7 @@ export default class ReservationRouter {
   private buildRouteReservation(): void {
     this.router.get(`/${RESTServerRoute.REST_RESERVATION}`, (req: Request, res: Response, next: NextFunction) => {
       req.query.ID = req.params.id;
-      void RouterUtils.handleRestServerAction(ReservationService.handleGetReservations.bind(this), ServerAction.RESERVATION, req, res, next);
+      void RouterUtils.handleRestServerAction(ReservationService.handleGetReservation.bind(this), ServerAction.RESERVATION, req, res, next);
     });
   }
 

@@ -1,24 +1,29 @@
 
 import { NextFunction, Request, Response } from 'express';
-import { ServerAction } from '../../../../types/Server';
-import ReservationValidatorRest from '../validator/ReservationValidatorRest';
-import UtilsService from './UtilsService';
-import { Action } from '../../../../types/Authorization';
-import AuthorizationService from './AuthorizationService';
+import { StatusCodes } from 'http-status-codes';
 import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
-import Constants from '../../../../utils/Constants';
-import OCPPUtils from '../../../ocpp/utils/OCPPUtils';
-import { HttpReservationCancelRequest, HttpReservationGetRequest, HttpReservationUpdateRequest } from '../../../../types/requests/HttpReservationRequest';
+import { Action } from '../../../../types/Authorization';
 import { ReservationDataResult } from '../../../../types/DataResult';
 import Reservation from '../../../../types/Reservation';
-import { StatusCodes } from 'http-status-codes';
+import { ServerAction } from '../../../../types/Server';
+import { HttpReservationCancelRequest, HttpReservationGetRequest, HttpReservationUpdateRequest, HttpReservationsGetRequest } from '../../../../types/requests/HttpReservationRequest';
+import Constants from '../../../../utils/Constants';
+import ReservationValidatorRest from '../validator/ReservationValidatorRest';
+import AuthorizationService from './AuthorizationService';
+import Utils from '../../../../utils/Utils';
 
 const MODULE_NAME = 'ReservationService';
 
 export default class ReservationService {
 
-  public static async handleGetReservations(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleGetReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationGetReq(req.body);
+    res.json(await ReservationService.getReservation(req, filteredRequest));
+    next();
+  }
+
+  public static async handleGetReservations(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationsGetReq(req.query);
     res.json(await ReservationService.getReservations(req, filteredRequest));
     next();
   }
@@ -44,15 +49,31 @@ export default class ReservationService {
     next();
   }
 
-  private static async getReservations(req: Request, filteredRequest: HttpReservationGetRequest,
+  private static async getReservation(req: Request, filteredRequest: HttpReservationGetRequest,
+      authAction: Action = Action.READ): Promise<Reservation> {
+    const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
+      req.tenant, req.user, authAction, filteredRequest, false);
+    if (!authorizations.authorized) {
+      return;
+    }
+    return await ReservationStorage.getReservationById(req.tenant,filteredRequest.args.id,filteredRequest.chargingStationId,filteredRequest.args.connectorId);
+  }
+
+  private static async getReservations(req: Request, filteredRequest: HttpReservationsGetRequest,
       authAction: Action = Action.LIST, additionalFilters: Record<string, any> = {}): Promise<ReservationDataResult> {
     const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
       req.tenant, req.user, authAction, filteredRequest, false);
     if (!authorizations.authorized) {
       return Constants.DB_EMPTY_DATA_RESULT;
     }
-    return await ReservationStorage.getReservations(req.tenant,
-      { chargingStationIDs: [filteredRequest.chargingStationID] }, Constants.DB_PARAMS_MAX_LIMIT);
+    return await ReservationStorage.getReservations(
+      req.tenant,
+      {
+        reservationIds: filteredRequest.reservationIds ? filteredRequest.reservationIds.split('|').map((id) => Utils.convertToInt(id)) : null,
+        chargingStationIds: filteredRequest.chargingStationIds ? filteredRequest.chargingStationIds.split('|') : null,
+        connectorIds: filteredRequest.connectorIds ? filteredRequest.connectorIds.split('|').map((id) => Utils.convertToInt(id)) : null
+      },
+      Constants.DB_PARAMS_MAX_LIMIT);
   }
 
   private static async saveReservation(req: Request, filteredRequest: Reservation,
@@ -82,7 +103,7 @@ export default class ReservationService {
     if (!authorizations.authorized) {
       return;
     }
-    await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.id,filteredRequest.chargingStationID);
+    await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.id,filteredRequest.chargingStationId);
   }
 
 }

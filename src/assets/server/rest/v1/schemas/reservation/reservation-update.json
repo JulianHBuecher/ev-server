@@ -1,6 +1,6 @@
 {
-  "$id": "reservation-create",
-  "title": "Create Reservation",
+  "$id": "reservation-update",
+  "title": "Update Reservation parameters",
   "type": "object",
   "properties": {
     "chargingStationId": {
@@ -39,9 +39,7 @@
     }
   },
   "required": [
-    "connectorId",
-    "expiryDate",
-    "idTag",
+    "chargingStationID",
     "reservationId"
   ]
 }

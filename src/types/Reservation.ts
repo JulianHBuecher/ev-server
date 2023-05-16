@@ -5,7 +5,7 @@ import User from './User';
 export default interface Reservation extends CreatedUpdatedProps {
   id: number;
   user: User;
-  chargeBoxId: string;
+  chargingStationId: string;
   connectorId: number;
   expiryDate: Date;
   tagId: string;
@@ -15,7 +15,7 @@ export default interface Reservation extends CreatedUpdatedProps {
 export interface ReservationTemplate extends CreatedUpdatedProps, AuthorizationActions {
   id: number;
   user: User;
-  chargeBoxId: string;
+  chargingStationId: string;
   connectorId: number;
   expiryDate: Date;
   tagId: string;

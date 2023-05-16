@@ -1,0 +1,17 @@
+{
+  "$id": "reservation-cancel",
+  "title": "Cancel a Reservation",
+  "type": "object",
+  "properties": {
+    "chargingStationId": {
+      "$ref": "common#/definitions/ids"
+    },
+    "reservationId": {
+      "type": "number",
+      "sanitize": "mongo"
+    }
+  },
+  "required": [
+    "reservationId"
+  ]
+}

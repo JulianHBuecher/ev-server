@@ -22,7 +22,7 @@
     "user": {
       "$ref": "user#"
     },
-    "chargeBoxId": {
+    "chargingStationId": {
       "type": "string",
       "sanitize": "mongo"
     },
@@ -46,7 +46,7 @@
   "required": [
     "id",
     "user",
-    "chargeBoxId",
+    "chargingStationId",
     "connectorId",
     "expiryDate",
     "tagId"

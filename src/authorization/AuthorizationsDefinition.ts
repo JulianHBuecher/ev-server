@@ -512,7 +512,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       {
         resource: Entity.CHARGING_STATION,
         action: [
-          Action.CREATE, Action.READ, Action.REMOTE_START_TRANSACTION, Action.REMOTE_STOP_TRANSACTION, Action.UNLOCK_CONNECTOR, Action.EXPORT, Action.RESERVE_NOW,
+          Action.CREATE, Action.READ, Action.REMOTE_START_TRANSACTION, Action.REMOTE_STOP_TRANSACTION, Action.UNLOCK_CONNECTOR, Action.EXPORT, Action.RESERVE_NOW, Action.CANCEL_RESERVATION
         ]
       },
       {
@@ -1400,7 +1400,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
         ]
       },
       {
-        resource: Entity.CHARGING_STATION, action: [Action.RESERVE_NOW, Action.REMOTE_START_TRANSACTION, Action.REMOTE_STOP_TRANSACTION],
+        resource: Entity.CHARGING_STATION, action: [Action.RESERVE_NOW, Action.CANCEL_RESERVATION, Action.REMOTE_START_TRANSACTION, Action.REMOTE_STOP_TRANSACTION],
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {

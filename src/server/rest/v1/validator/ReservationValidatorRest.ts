@@ -1,13 +1,14 @@
 import fs from 'fs';
 import global from '../../../../types/GlobalType';
 import Reservation from '../../../../types/Reservation';
-import { HttpReservationCancelRequest, HttpReservationGetRequest, HttpReservationUpdateRequest } from '../../../../types/requests/HttpReservationRequest';
+import { HttpReservationCancelRequest, HttpReservationGetRequest, HttpReservationUpdateRequest, HttpReservationsGetRequest } from '../../../../types/requests/HttpReservationRequest';
 import Schema from '../../../../types/validator/Schema';
 import SchemaValidator from '../../../../validator/SchemaValidator';
 
 export default class ReservationValidatorRest extends SchemaValidator {
   private static instance: ReservationValidatorRest | null = null;
   private reservationGet: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservation-get.json`,'utf-8'));
+  private reservationsGet: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservations-get.json`,'utf-8'));
   private reservationCreate: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservation-create.json`,'utf-8'));
   private reservationUpdate: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservation-update.json`,'utf-8'));
   private reservationCancel: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservation-cancel.json`,'utf-8'));
@@ -25,6 +26,10 @@ export default class ReservationValidatorRest extends SchemaValidator {
 
   public validateReservationGetReq(data: Record<string, unknown>): HttpReservationGetRequest {
     return this.validate(this.reservationGet, data);
+  }
+
+  public validateReservationsGetReq(data: Record<string, unknown>): HttpReservationsGetRequest {
+    return this.validate(this.reservationsGet, data);
   }
 
   public validateReservationCreateReq(data: Reservation): Reservation {

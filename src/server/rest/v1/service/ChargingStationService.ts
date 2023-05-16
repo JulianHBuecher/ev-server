@@ -1,13 +1,12 @@
 import { Action, Entity } from '../../../../types/Authorization';
 import ChargingStation, { ChargingStationOcppParameters, ChargingStationQRCode, Command, ConnectorType, OCPPParams, OcppParameter, StaticLimitAmps } from '../../../../types/ChargingStation';
-import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
+import { HTTPError } from '../../../../types/HTTPError';
 import { HttpChargingStationCompositeScheduleGetRequest, HttpChargingStationConfigurationChangeRequest, HttpChargingStationLimitPowerRequest, HttpChargingStationParamsUpdateRequest, HttpChargingStationTransactionStartRequest, HttpChargingStationTransactionStopRequest, HttpChargingStationsGetRequest } from '../../../../types/requests/HttpChargingStationRequest';
 import { NextFunction, Request, Response } from 'express';
 import { OCPICommandResponse, OCPICommandResponseType } from '../../../../types/ocpi/OCPICommandResponse';
 import { OCPPCancelReservationStatus, OCPPChangeConfigurationResponse, OCPPConfigurationStatus, OCPPGetCompositeScheduleResponse, OCPPStatus, OCPPUnlockStatus } from '../../../../types/ocpp/OCPPClient';
 import Tenant, { TenantComponents } from '../../../../types/Tenant';
 
-import AppAuthError from '../../../../exception/AppAuthError';
 import AppError from '../../../../exception/AppError';
 import AuthorizationService from './AuthorizationService';
 import Authorizations from '../../../../authorization/Authorizations';
@@ -53,8 +52,8 @@ import User from '../../../../types/User';
 import UserStorage from '../../../../storage/mongodb/UserStorage';
 import UserToken from '../../../../types/UserToken';
 import Utils from '../../../../utils/Utils';
-import UtilsService from './UtilsService';
 import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
+import UtilsService from './UtilsService';
 
 const MODULE_NAME = 'ChargingStationService';
 
@@ -574,12 +573,12 @@ export default class ChargingStationService {
 
   public static async handleReserveNow(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
     // Request assembly
-    req.body.chargingStationID = req.params.id;
+    req.body.chargingStationId = req.params.id;
     // Filter
     const filteredRequest = ChargingStationValidatorRest.getInstance().validateChargingStationActionReserveNowReq(req.body);
     // Check and get dynamic auth
     const chargingStation = await UtilsService.checkAndGetChargingStationAuthorization(
-      req.tenant, req.user, filteredRequest.chargingStationID, Action.RESERVE_NOW, action, null, { withSiteArea: true });
+      req.tenant, req.user, filteredRequest.chargingStationId, Action.RESERVE_NOW, action, null, { withSiteArea: true });
     // Get the OCPP Client
     const chargingStationClient = await ChargingStationClientFactory.getChargingStationClient(req.tenant, chargingStation);
     if (!chargingStationClient) {
@@ -593,7 +592,7 @@ export default class ChargingStationService {
       {
         id: filteredRequest.args.reservationId,
         user: req.user.user,
-        chargeBoxId: chargingStation.id,
+        chargingStationId: chargingStation.id,
         connectorId: filteredRequest.args.connectorId,
         expiryDate: filteredRequest.args.expiryDate,
         tagId: filteredRequest.args.idTag,
@@ -606,12 +605,12 @@ export default class ChargingStationService {
 
   public static async handleCancelReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
     // Request assembly
-    req.body.chargingStationID = req.params.id;
+    req.body.chargingStationId = req.params.id;
     // Filter
     const filteredRequest = ChargingStationValidatorRest.getInstance().validateChargingStationActionReservationCancelReq(req.body);
     // Check and get dynamic auth
     const chargingStation = await UtilsService.checkAndGetChargingStationAuthorization(
-      req.tenant, req.user, filteredRequest.chargingStationID, Action.CANCEL_RESERVATION, action, null, { withSiteArea: true });
+      req.tenant, req.user, filteredRequest.chargingStationId, Action.CANCEL_RESERVATION, action, null, { withSiteArea: true });
     // Get the OCPP Client
     const chargingStationClient = await ChargingStationClientFactory.getChargingStationClient(req.tenant, chargingStation);
     if (!chargingStationClient) {
@@ -623,7 +622,7 @@ export default class ChargingStationService {
     }
     const result = await chargingStationClient.cancelReservation(filteredRequest.args);
     if (result.status === OCPPCancelReservationStatus.ACCEPTED) {
-      await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.reservationId,filteredRequest.chargingStationID);
+      await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.reservationId,filteredRequest.chargingStationId);
     }
     res.json(result);
     next();

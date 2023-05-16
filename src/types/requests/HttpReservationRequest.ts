@@ -2,7 +2,7 @@ import HttpDatabaseRequest from './HttpDatabaseRequest';
 import User from '../User';
 
 export interface HttpReservationRequest {
-  chargingStationID?: string;
+  chargingStationId?: string;
 }
 
 export interface HttpReservationGetRequest extends HttpReservationRequest, HttpDatabaseRequest {
@@ -12,13 +12,19 @@ export interface HttpReservationGetRequest extends HttpReservationRequest, HttpD
   }
 }
 
+export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
+  chargingStationIds?: string;
+  connectorIds?: string;
+  reservationIds?: string;
+}
+
 export interface HttpReservationUpdateRequest extends HttpReservationRequest {
   args: {
     id: number;
     user: User;
-    chargeBoxId: string;
-    connectorId: number;
     expiryDate: Date;
+    chargingStationId: string;
+    connectorId: number;
     tagId: string;
     parentTagId?: string;
   }
@@ -27,7 +33,7 @@ export interface HttpReservationUpdateRequest extends HttpReservationRequest {
 export interface HttpReservationCancelRequest extends HttpReservationRequest {
   args: {
     id: number;
-    chargeBoxId: string;
+    chargingStationId: string;
     connectorId: number;
   }
 }

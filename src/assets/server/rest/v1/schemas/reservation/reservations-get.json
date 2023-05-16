@@ -1,0 +1,17 @@
+{
+  "$id": "reservation-get",
+  "title": "Get Reservation",
+  "type": "object",
+  "properties": {
+    "chargingStationIds": {
+      "$ref": "common#/definitions/string-ids"
+    },
+    "connectorIds": {
+      "$ref": "common#/definitions/number-ids"
+    },
+    "reservationIds": {
+      "$ref": "common#/definitions/number-ids"
+    }
+  },
+  "required": []
+}

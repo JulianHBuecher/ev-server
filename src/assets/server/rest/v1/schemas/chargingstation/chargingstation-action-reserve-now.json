@@ -3,7 +3,7 @@
   "title": "Reserve Now",
   "type": "object",
   "properties": {
-    "chargingStationID": {
+    "chargingStationId": {
       "$ref": "chargingstation#/definitions/id"
     },
     "args": {
@@ -38,6 +38,6 @@
     }
   },
   "required": [
-    "chargingStationID"
+    "chargingStationId"
   ]
 }
