@@ -4,20 +4,20 @@ import User from './User';
 
 export default interface Reservation extends CreatedUpdatedProps {
   id: number;
-  user: User;
   chargingStationId: string;
   connectorId: number;
   expiryDate: Date;
   tagId: string;
   parentTagId?: string;
+  type?: string;
 }
 
 export interface ReservationTemplate extends CreatedUpdatedProps, AuthorizationActions {
   id: number;
-  user: User;
   chargingStationId: string;
   connectorId: number;
   expiryDate: Date;
   tagId: string;
   parentTagId?: string;
+  type: string;
 }

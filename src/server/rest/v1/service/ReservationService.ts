@@ -83,7 +83,7 @@ export default class ReservationService {
     if (!authorizations.authorized) {
       return;
     }
-    await ReservationStorage.createReservation(req.tenant, { ...filteredRequest });
+    await ReservationStorage.createReservation(req.tenant, req.user.user, { ...filteredRequest });
   }
 
   private static async updateReservation(req: Request, filteredRequest: HttpReservationUpdateRequest,

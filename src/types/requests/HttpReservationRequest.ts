@@ -21,7 +21,6 @@ export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
 export interface HttpReservationUpdateRequest extends HttpReservationRequest {
   args: {
     id: number;
-    user: User;
     expiryDate: Date;
     chargingStationId: string;
     connectorId: number;

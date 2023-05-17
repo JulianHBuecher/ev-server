@@ -19,9 +19,6 @@
     "lastChangedOn": {
       "$ref": "common#/definitions/lastChangedOn"
     },
-    "user": {
-      "$ref": "user#"
-    },
     "chargingStationId": {
       "type": "string",
       "sanitize": "mongo"
@@ -41,11 +38,14 @@
     },
     "parentTagId": {
       "$ref": "tag#/definitions/id"
+    },
+    "type": {
+      "type": "string",
+      "sanitize": "mongo"
     }
   },
   "required": [
     "id",
-    "user",
     "chargingStationId",
     "connectorId",
     "expiryDate",

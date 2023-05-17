@@ -588,15 +588,15 @@ export default class ChargingStationService {
         message: 'Charging Station is not connected to the backend',
       });
     }
-    await ReservationStorage.createReservation(req.tenant,
+    await ReservationStorage.createReservation(req.tenant, req.user.user,
       {
         id: filteredRequest.args.reservationId,
-        user: req.user.user,
         chargingStationId: chargingStation.id,
         connectorId: filteredRequest.args.connectorId,
         expiryDate: filteredRequest.args.expiryDate,
         tagId: filteredRequest.args.idTag,
-        parentTagId: filteredRequest.args.parentIdTag
+        parentTagId: filteredRequest.args.parentIdTag,
+        type: Action.RESERVE_NOW
       }
     );
     res.json(await chargingStationClient.reserveNow(filteredRequest.args));

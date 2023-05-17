@@ -1,4 +1,4 @@
-import { Filter, Sort } from 'mongodb';
+import { Filter, ObjectId, Sort, Timestamp } from 'mongodb';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { FilterParams } from '../../types/GlobalType';
 import Reservation from '../../types/Reservation';
@@ -8,6 +8,7 @@ import Logging from '../../utils/Logging';
 import Utils from '../../utils/Utils';
 import ReservationValidatorStorage from '../validator/ReservationValidatorStorage';
 import DatabaseUtils from './DatabaseUtils';
+import User from '../../types/User';
 
 const MODULE_NAME = 'ReservationStorage';
 const COLLECTION_NAME = 'reservations';
@@ -80,29 +81,46 @@ export default class ReservationStorage {
     };
   }
 
-  public static async createReservation(tenant: Tenant, reservationToSave: Reservation): Promise<void> {
+  public static async createReservation(tenant: Tenant, user: User, reservationToSave: Reservation): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.createReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
     ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservationToSave);
     // Check if reservation already exists
     const reservation = await this.doesReservationExist(tenant,reservationToSave);
+    const timestamp = new Date();
     if (!reservation) {
-      await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).insertOne(reservationToSave);
+      await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+        .insertOne(
+          {
+            _id: new ObjectId(reservationToSave.id),
+            ...reservationToSave,
+            createdBy: { 'id': user.id },
+            createdOn: timestamp,
+            lastChangedBy: { 'id': user.id },
+            lastChangedOn: timestamp
+          });
     } else {
-      await this.updateReservation(tenant, reservationToSave);
+      await this.updateReservation(tenant,
+        {
+          ...reservationToSave,
+          lastChangedBy: { 'id': user.id },
+          lastChangedOn: timestamp
+        });
     }
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationToSave);
   }
 
-  public static async createReservations(tenant: Tenant, reservationsToSave: Reservation[]): Promise<void> {
+  public static async createReservations(tenant: Tenant, user: User, reservationsToSave: Reservation[]): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.createReservations.name;
     DatabaseUtils.checkTenantObject(tenant);
     reservationsToSave.forEach((reservation) => {
       ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservation);
     });
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).insertMany(reservationsToSave);
+    for (const reservation of reservationsToSave) {
+      await ReservationStorage.createReservation(tenant,user,reservation);
+    }
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationsToSave);
   }
 
@@ -113,7 +131,8 @@ export default class ReservationStorage {
     const filter: Filter<Reservation> = {};
     filter.id = reservationToUpdate.id;
     ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservationToUpdate);
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).findOneAndReplace(filter, reservationToUpdate);
+    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+      .findOneAndUpdate(filter, reservationToUpdate);
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationToUpdate);
   }
 
