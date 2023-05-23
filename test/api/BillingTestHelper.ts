@@ -791,14 +791,14 @@ export default class BillingTestHelper {
   }
 
   public async getLatestDraftInvoice(userId?: string): Promise<BillingInvoice> {
-    // ACHTUNG: There is no data after running: npm run mochatest:createContext
+    // ACHTUNG: There is no data after running: pnpm mochatest:createContext
     // In that situation we return 0!
     const draftInvoices = await this.getDraftInvoices(userId);
     return (draftInvoices && draftInvoices.length > 0) ? draftInvoices[0] : null;
   }
 
   public async getNumberOfSessions(userId?: string): Promise<number> {
-    // ACHTUNG: There is no data after running: npm run mochatest:createContext
+    // ACHTUNG: There is no data after running: pnpm mochatest:createContext
     // In that situation we return 0!
     const draftInvoice = await this.getLatestDraftInvoice(userId);
     return (draftInvoice) ? draftInvoice.sessions?.length : 0;

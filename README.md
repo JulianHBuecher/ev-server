@@ -15,7 +15,7 @@ The application features:
 * Role management (ABAC)
 * Static Energy Management: Manually limit the charging station
 * Smart Charging with Assets, Fair Sharing, Peak Shaving, Cost Management and Phase Balancing
-* Realtime Asset Management (Building, Battery, Solar Panel) 
+* Realtime Asset Management (Building, Battery, Solar Panel)
 * Billing with Stripe
 * Complex Pricing
 * Roaming integration (Gire, Hubject)
@@ -34,14 +34,14 @@ The application features:
 * Install required build tools:
   * Under Windows as an administrator:
     ```powershell
-    npm install --global --production windows-build-tools
+    pnpm install --global --production windows-build-tools
     ```
   * Under Mac OS X, install Xcode from the Apple store
   * Under Debian based GNU/Linux distribution:
     ```shell
     sudo apt install build-essential
     ```
-* Go into the **ev-server** directory and run **npm install** or **yarn install**
+* Go into the **ev-server** directory and run **pnpm install** or **yarn install**
 
 **NOTE**:
 * On Windows with **chocolatey** (https://chocolatey.org/), do as an administrator:
@@ -452,13 +452,13 @@ All charging stations supporting OCPP-J and OCPP-S version 1.5 and 1.6 protocols
 Start the application:
 
 ```shell
-npm run start
+ppnpm start
 ```
 
 You can also start the application with the standard nodejs profiler:
 
 ```shell
-npm run start:prod:prof
+ppnpm start:prod:prof
 ```
 
 ### Development Mode
@@ -466,19 +466,19 @@ npm run start:prod:prof
 In a console, start the application (rebuild and restarts if any changes is detected):
 
 ```shell
-npm run start:dev
+ppnpm start:dev
 ```
 
 You can also start the application with the standard nodejs profiler:
 
 ```shell
-npm run start:dev:prof
+ppnpm start:dev:prof
 ```
 
 ### Profiling with [clinic](https://clinicjs.org)
 
 ```shell
-npm run start:(prod|dev):(doctorprof|flameprof|bubbleprof)
+ppnpm start:(prod|dev):(doctorprof|flameprof|bubbleprof)
 ```
 
 **NOTE**: You can also use the files in the ev-config-scripts.zip on the share to have a correct initial setup of your development environment and some server startup helpers.
@@ -511,8 +511,8 @@ npm run start:(prod|dev):(doctorprof|flameprof|bubbleprof)
 
   For further parameters, check the [`config`](./test/config.js) content. It is also possible to use environment variables as defined in the [`config`](./test/config.js) file
 * Start a server containing the configured admin user in the database
-* If you have not done it yet, run the command `npm run test:createContext`
-* Run the command `npm run test`
+* If you have not done it yet, run the command `ppnpm test:createContext`
+* Run the command `ppnpm test`
 
 ### Docker Mode
 Depending on the need it is possible to start different docker containers.

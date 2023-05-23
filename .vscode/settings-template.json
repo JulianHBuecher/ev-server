@@ -8,7 +8,6 @@
       "typescript",
       "typescriptreact"
     ],
-    "jest.jestCommandLine": "npm run test -- ",
+    "jest.jestCommandLine": "pnpm test -- ",
     "jest.autoRun": { "watch": "false" }
   }
-  

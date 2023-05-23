@@ -18,7 +18,7 @@ COPY *.json ./
 COPY docker/config-standalone.json ./src/assets/config.json
 COPY webpack.config.js ./
 
-RUN npm run build:${build}
+RUN pnpm build:${build}
 
 FROM node:16
 

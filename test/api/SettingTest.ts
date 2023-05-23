@@ -1,6 +1,6 @@
 // Goal : Checks related to settings
 // Note : These unit tests use the tenant utall. This tenant should exist prior running these tests.
-//        Run npm run mochatest:createContext to create the needed utall if not present.
+//        Run pnpm mochatest:createContext to create the needed utall if not present.
 
 import { CryptoKeyProperties, SettingDB } from '../../src/types/Setting';
 import chai, { expect } from 'chai';

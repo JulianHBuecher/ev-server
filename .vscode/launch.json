@@ -28,12 +28,11 @@
     },
     {
       "name": "Debug",
-      "type": "pwa-node",
+      "type": "node",
+      "runtimeExecutable": "pnpm",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
       "runtimeArgs": [
-        "run-script",
         "start:dev:debug"
       ],
       "skipFiles": [
@@ -43,12 +42,11 @@
     },
     {
       "name": "Debug (nodemon)",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "run-script",
         "start:dev:debug:nodemon"
       ],
       "sourceMaps": true,
@@ -63,12 +61,11 @@
     },
     {
       "name": "start:dev:debug:rest",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "run-script",
         "start:dev:debug:rest"
       ],
       "sourceMaps": true,
@@ -83,12 +80,11 @@
     },
     {
       "name": "start:dev:debug:ocppj",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "run-script",
         "start:dev:debug:ocppj"
       ],
       "sourceMaps": true,
@@ -103,12 +99,11 @@
     },
     {
       "name": "start:dev:debug:batch",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "run-script",
         "start:dev:debug:batch"
       ],
       "sourceMaps": true,
@@ -123,12 +118,11 @@
     },
     {
       "name": "Debug Tests 'createContext'",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "run-script",
         "test:createContext"
       ],
       "sourceMaps": true,

@@ -1,6 +1,6 @@
 // Goal : Checks related to security - checking if all sensitive data is anonymized in logs.
 // Note : These unit tests use the tenant utall. This tenant should exist prior running these tests.
-//        Run npm run mochatest:createContext to create the needed utall if not present.
+//        Run pnpm mochatest:createContext to create the needed utall if not present.
 
 import CentralServerService from './client/CentralServerService';
 import Constants from '../../src/utils/Constants';
