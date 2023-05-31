@@ -20,9 +20,7 @@ RUN set -ex \
   && pnpm set progress=false \
   && pnpm config set depth 0 \
   && pnpm install \
-  && pnpm build \
   && apk del .gyp
-
 
 RUN pnpm build:${build}
 
