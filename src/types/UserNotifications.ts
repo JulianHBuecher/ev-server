@@ -30,27 +30,26 @@ export default interface UserNotifications {
 }
 
 export type UserNotificationKeys =
-  'sendSessionStarted' |
-  'sendOptimalChargeReached' |
-  'sendEndOfCharge' |
-  'sendEndOfSession' |
-  'sendUserAccountStatusChanged' |
-  'sendUnknownUserBadged' |
-  'sendChargingStationStatusError' |
-  'sendChargingStationRegistered' |
-  'sendOcpiPatchStatusError' |
-  'sendOicpPatchStatusError' |
-  'sendUserAccountInactivity' |
-  'sendPreparingSessionNotStarted' |
-  'sendOfflineChargingStations' |
-  'sendBillingSynchronizationFailed' |
-  'sendBillingNewInvoice' |
-  'sendSessionNotStarted' |
-  'sendCarCatalogSynchronizationFailed' |
-  'sendEndUserErrorNotification' |
-  'sendAccountVerificationNotification' |
-  'sendAdminAccountVerificationNotification'
-  ;
+  | 'sendSessionStarted'
+  | 'sendOptimalChargeReached'
+  | 'sendEndOfCharge'
+  | 'sendEndOfSession'
+  | 'sendUserAccountStatusChanged'
+  | 'sendUnknownUserBadged'
+  | 'sendChargingStationStatusError'
+  | 'sendChargingStationRegistered'
+  | 'sendOcpiPatchStatusError'
+  | 'sendOicpPatchStatusError'
+  | 'sendUserAccountInactivity'
+  | 'sendPreparingSessionNotStarted'
+  | 'sendOfflineChargingStations'
+  | 'sendBillingSynchronizationFailed'
+  | 'sendBillingNewInvoice'
+  | 'sendSessionNotStarted'
+  | 'sendCarCatalogSynchronizationFailed'
+  | 'sendEndUserErrorNotification'
+  | 'sendAccountVerificationNotification'
+  | 'sendAdminAccountVerificationNotification';
 
 export enum UserNotificationType {
   SESSION_STARTED = 'SessionStarted',
@@ -77,13 +76,13 @@ export enum UserNotificationType {
   CHECK_AND_APPLY_SMART_CHARGING_FAILED = 'ComputeAndApplyChargingProfilesFailed',
   SESSION_NOT_STARTED_AFTER_AUTHORIZE = 'SessionNotStartedAfterAuthorize',
   END_USER_ERROR_NOTIFICATION = 'EndUserErrorNotification',
-  ACCOUNT_VERIFICATION_NOTIFICATION = 'AccountVerificationNotification'
+  ACCOUNT_VERIFICATION_NOTIFICATION = 'AccountVerificationNotification',
 }
 
 export enum NotificationSeverity {
   INFO = '#00376C',
   WARNING = '#FB8C00',
-  ERROR = '#ee0000'
+  ERROR = '#ee0000',
 }
 
 export interface NotificationResult {

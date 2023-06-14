@@ -3,45 +3,51 @@
   "title": "Create Reservation",
   "type": "object",
   "properties": {
-    "chargingStationId": {
-      "$ref": "chargingstation#/definitions/id"
+    "ID": {
+      "$ref": "reservation#/definitions/ID"
     },
-    "connectorId": {
-      "$ref": "chargingstation#/definitions/connector/properties/connectorId"
+    "chargingStationID": {
+      "$ref": "reservation#/definitions/chargingStationId"
+    },
+    "connectorID": {
+      "$ref": "reservation#/definitions/connectorId"
     },
     "fromDate": {
-      "type": "string",
-      "format": "date-time",
-      "customType": "date",
-      "sanitize": "mongo"
+      "$ref": "reservation#/definitions/fromDate"
     },
     "toDate": {
-      "type": "string",
-      "format": "date-time",
-      "customType": "date",
-      "sanitize": "mongo"
+      "$ref": "reservation#/definitions/toDate"
     },
     "expiryDate": {
-      "type": "string",
-      "format": "date-time",
-      "customType": "date",
-      "sanitize": "mongo"
+      "$ref": "reservation#/definitions/expiryDate"
     },
     "idTag": {
-      "$ref": "tag#/definitions/id"
+      "$ref": "reservation#/definitions/idTag"
     },
     "parentIdTag": {
-      "$ref": "tag#/definitions/id"
+      "$ref": "reservation#/definitions/parentIdTag"
     },
-    "reservationId": {
-      "type": "number",
-      "sanitize": "mongo"
+    "userID": {
+      "$ref": "reservation#/definitions/userID"
+    },
+    "carID": {
+      "$ref": "reservation#/definitions/carID"
+    },
+    "siteID": {
+      "$ref": "reservation#/definitions/siteID"
+    },
+    "siteAreaID": {
+      "$ref": "reservation#/definitions/siteAreaID"
+    },
+    "companyID": {
+      "$ref": "reservation#/definitions/companyID"
+    },
+    "type": {
+      "$ref": "reservation#/definitions/type"
+    },
+    "status": {
+      "$ref": "reservation#/definitions/status"
     }
   },
-  "required": [
-    "connectorId",
-    "expiryDate",
-    "idTag",
-    "reservationId"
-  ]
+  "required": ["ID", "chargingStationID", "connectorID", "expiryDate", "idTag"]
 }

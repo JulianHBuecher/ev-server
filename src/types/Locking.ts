@@ -1,4 +1,3 @@
-
 export default interface Lock {
   id?: string;
   tenantID: string;
@@ -11,7 +10,7 @@ export default interface Lock {
 }
 
 export enum LockType {
-  EXCLUSIVE = 'E'
+  EXCLUSIVE = 'E',
 }
 
 export enum LockEntity {

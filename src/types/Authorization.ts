@@ -23,7 +23,11 @@ export interface AuthorizationDefinitionGrant {
 
 export interface AuthorizationDefinitionCondition {
   Fn: string;
-  args: AuthorizationDefinitionConditionArgs | AuthorizationDefinitionConditionArgs[] | AuthorizationDefinitionCondition[] | Record<string, unknown>;
+  args:
+    | AuthorizationDefinitionConditionArgs
+    | AuthorizationDefinitionConditionArgs[]
+    | AuthorizationDefinitionCondition[]
+    | Record<string, unknown>;
 }
 
 export interface AuthorizationDefinitionConditionArgs {
@@ -36,8 +40,8 @@ export interface AuthorizationDefinitionFieldMetadata {
   visible: boolean;
   enabled: boolean;
   mandatory: boolean;
-  values: string[] | boolean[] | number[],
-  defaultValue: string | boolean | number,
+  values: string[] | boolean[] | number[];
+  defaultValue: string | boolean | number;
 }
 
 export interface AuthorizationResult {
@@ -49,7 +53,10 @@ export interface AuthorizationResult {
 export interface AuthorizationFilter {
   filters: Record<string, any>;
   authorized: boolean;
-  dataSources: Map<DynamicAuthorizationDataSourceName, DynamicAuthorizationDataSource<DynamicAuthorizationDataSourceData>>;
+  dataSources: Map<
+    DynamicAuthorizationDataSourceName,
+    DynamicAuthorizationDataSource<DynamicAuthorizationDataSourceData>
+  >;
   projectFields: string[];
   metadata?: Record<string, AuthorizationDefinitionFieldMetadata>;
 }
@@ -113,7 +120,7 @@ export enum Entity {
   CONSUMPTION = 'Consumption',
   SMART_CHARGING = 'SmartCharging',
   STATISTIC = 'Statistic',
-  RESERVATION = 'Reservation'
+  RESERVATION = 'Reservation',
 }
 
 export enum Action {
@@ -303,47 +310,47 @@ export interface BillingInvoiceAuthorizationActions extends AuthorizationActions
 }
 
 export interface ChargingStationAuthorizationActions extends AuthorizationActions {
-  canReserveNow?:boolean;
-  canCancelReservation?:boolean;
-  canReset?:boolean;
-  canClearCache?:boolean;
-  canGetConfiguration?:boolean;
-  canChangeConfiguration?:boolean;
-  canSetChargingProfile?:boolean;
-  canGetCompositeSchedule?:boolean;
-  canClearChargingProfile?:boolean;
-  canGetDiagnostics?:boolean;
-  canUpdateFirmware?:boolean;
-  canRemoteStopTransaction?:boolean;
-  canStopTransaction?:boolean;
-  canStartTransaction?:boolean;
-  canChangeAvailability?:boolean;
-  canRemoteStartTransaction?:boolean;
-  canUnlockConnector?:boolean;
-  canDataTransfer?:boolean;
-  canGenerateQrCode?:boolean;
-  canMaintainPricingDefinitions?:boolean;
-  canUpdateOCPPParams?:boolean;
-  canLimitPower?:boolean;
-  canDeleteChargingProfile?:boolean;
-  canGetOCPPParams?:boolean;
-  canUpdateChargingProfile?:boolean;
-  canGetConnectorQRCode?:boolean;
+  canReserveNow?: boolean;
+  canCancelReservation?: boolean;
+  canReset?: boolean;
+  canClearCache?: boolean;
+  canGetConfiguration?: boolean;
+  canChangeConfiguration?: boolean;
+  canSetChargingProfile?: boolean;
+  canGetCompositeSchedule?: boolean;
+  canClearChargingProfile?: boolean;
+  canGetDiagnostics?: boolean;
+  canUpdateFirmware?: boolean;
+  canRemoteStopTransaction?: boolean;
+  canStopTransaction?: boolean;
+  canStartTransaction?: boolean;
+  canChangeAvailability?: boolean;
+  canRemoteStartTransaction?: boolean;
+  canUnlockConnector?: boolean;
+  canDataTransfer?: boolean;
+  canGenerateQrCode?: boolean;
+  canMaintainPricingDefinitions?: boolean;
+  canUpdateOCPPParams?: boolean;
+  canLimitPower?: boolean;
+  canDeleteChargingProfile?: boolean;
+  canGetOCPPParams?: boolean;
+  canUpdateChargingProfile?: boolean;
+  canGetConnectorQRCode?: boolean;
   canPushTransactionCDR?: boolean;
   canListCompletedTransactions?: boolean;
   canAuthorize?: boolean;
 }
 
 export interface ConnectorAuthorizationActions extends AuthorizationActions {
-  canRemoteStopTransaction?:boolean;
-  canRemoteStartTransaction?:boolean;
-  canUnlockConnector?:boolean;
-  canReadTransaction?:boolean;
+  canRemoteStopTransaction?: boolean;
+  canRemoteStartTransaction?: boolean;
+  canUnlockConnector?: boolean;
+  canReadTransaction?: boolean;
 }
 
 export interface ChargingProfileAuthorizationActions extends AuthorizationActions {
-  canDownload?:boolean;
-  canReadSiteArea?:boolean;
+  canDownload?: boolean;
+  canReadSiteArea?: boolean;
 }
 export interface BillingAccountAuthorizationActions extends AuthorizationActions {
   canOnboard?: boolean;
@@ -413,41 +420,49 @@ export enum DynamicAuthorizationDataSourceName {
   SITES_ADMIN_OR_OWNER = 'SitesAdminOrOwner',
 }
 
-export interface DynamicAuthorizationDataSourceData { }
+export interface DynamicAuthorizationDataSourceData {}
 
-export interface AssignedSitesCompaniesDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface AssignedSitesCompaniesDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   companyIDs?: string[];
 }
 
-export interface SitesAdminDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface SitesAdminDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   siteIDs?: string[];
 }
 
-export interface SitesAdminOrOwnerDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface SitesAdminOrOwnerDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   siteIDs?: string[];
 }
 
-export interface SitesAdminUsersDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
-  siteIDs?: string[];
-  userID?: string;
-  tagIDs?: string[];
-}
-
-export interface SitesOwnerUsersDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface SitesAdminUsersDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   siteIDs?: string[];
   userID?: string;
   tagIDs?: string[];
 }
 
-export interface SitesOwnerDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface SitesOwnerUsersDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
+  siteIDs?: string[];
+  userID?: string;
+  tagIDs?: string[];
+}
+
+export interface SitesOwnerDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   siteIDs?: string[];
 }
 
-export interface AssignedSitesDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface AssignedSitesDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   siteIDs?: string[];
 }
 
-export interface OwnUserDynamicAuthorizationDataSourceData extends DynamicAuthorizationDataSourceData {
+export interface OwnUserDynamicAuthorizationDataSourceData
+  extends DynamicAuthorizationDataSourceData {
   userID?: string;
   tagIDs?: string[];
 }

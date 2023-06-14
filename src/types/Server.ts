@@ -1,4 +1,3 @@
-
 export enum ServerAction {
   UNKNOWN_ACTION = 'Unknown',
 
@@ -424,7 +423,7 @@ export enum ServerAction {
   USER_IMAGE = 'UserImage',
   TAGS = 'Tags',
   TAG = 'Tag',
-  TAG_BY_VISUAL_ID= 'TagByVisualID',
+  TAG_BY_VISUAL_ID = 'TagByVisualID',
   USER_DEFAULT_TAG_CAR = 'UserDefaultTagCar',
   USER_SESSION_CONTEXT = 'UserSessionContext',
   TAG_CREATE = 'TagCreate',
@@ -495,14 +494,14 @@ export enum ServerAction {
   HTTP_ERROR = 'HttpError',
 
   EXPORT_TO_CSV = 'ExportToCSV',
-  SHIELD ='Shield',
+  SHIELD = 'Shield',
   RATE_LIMITER = 'RateLimiter',
 
   RESERVATION = 'Reservation',
   RESERVATIONS = 'Reservations',
   RESERVATION_CREATE = 'ReservationCreate',
   RESERVATION_UPDATE = 'ReservationUpdate',
-  RESERVATION_DELETE = 'ReservationDelete'
+  RESERVATION_DELETE = 'ReservationDelete',
 }
 
 // RESTful API
@@ -745,7 +744,7 @@ export enum RESTServerRoute {
 
   // RESERVATION URLs for CRUD operations
   REST_RESERVATIONS = 'reservations',
-  REST_RESERVATION = 'reservations/:id'
+  REST_RESERVATION = 'reservations/:id',
 }
 
 export enum OCPIServerRoute {
@@ -760,14 +759,14 @@ export enum OCPIServerRoute {
 }
 
 export enum OCPIServerRouteVersions {
-  VERSION_211 = '2.1.1'
+  VERSION_211 = '2.1.1',
 }
 
 export enum ServerProtocol {
   HTTP = 'http',
   HTTPS = 'https',
   WS = 'ws',
-  WSS = 'wss'
+  WSS = 'wss',
 }
 
 export enum ServerType {
@@ -784,5 +783,5 @@ export enum ServerType {
 
 export enum WSServerProtocol {
   OCPP16 = 'ocpp1.6',
-  REST = 'rest'
+  REST = 'rest',
 }

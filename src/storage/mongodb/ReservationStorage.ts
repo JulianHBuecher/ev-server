@@ -1,43 +1,45 @@
-import { Filter, ObjectId, Sort, Timestamp } from 'mongodb';
+import { Filter, ObjectId, Sort } from 'mongodb';
+
+import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { FilterParams } from '../../types/GlobalType';
-import Reservation from '../../types/Reservation';
+import { OCPPReservationStatus } from '../../types/ocpp/OCPPClient';
+import Reservation, { ReservationType } from '../../types/Reservation';
 import Tenant from '../../types/Tenant';
-import DbParams from '../../types/database/DbParams';
+import UserToken from '../../types/UserToken';
+import Constants from '../../utils/Constants';
 import Logging from '../../utils/Logging';
 import Utils from '../../utils/Utils';
 import ReservationValidatorStorage from '../validator/ReservationValidatorStorage';
 import DatabaseUtils from './DatabaseUtils';
-import User from '../../types/User';
 
 const MODULE_NAME = 'ReservationStorage';
 const COLLECTION_NAME = 'reservations';
 
 export default class ReservationStorage {
-
-  public static async getReservationById(tenant: Tenant, reservationId: number,
-      chargingStationId?: string, connectorId?: number, ): Promise<Reservation> {
-    const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.getReservationById.name;
-    DatabaseUtils.checkTenantObject(tenant);
-    const filter: Filter<Reservation> = {};
-    filter.id = reservationId;
-    if (!Utils.isNullOrUndefined(connectorId)) {
-      filter.connectorId = connectorId;
-    }
-    if (!Utils.isNullOrUndefined(chargingStationId)) {
-      filter.chargingStationId = chargingStationId;
-    }
-    const reservation = await global.database
-      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .findOne(filter);
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservation);
-    return reservation;
-  }
-
-  public static async getReservations(tenant: Tenant,
-      params: { reservationIds?: number[]; chargingStationIds?: string[]; connectorIds?: number[]; } = {},
-      dbParams: DbParams): Promise<ReservationDataResult> {
+  public static async getReservations(
+    tenant: Tenant,
+    params: {
+      search?: string;
+      reservationIDs?: string[];
+      chargingStationIDs?: string[];
+      connectorIDs?: string[];
+      userIDs?: string[];
+      carIDs?: string[];
+      siteIDs?: string[];
+      status?: OCPPReservationStatus;
+      types?: string[];
+      withUser?: boolean;
+      withChargingStation?: boolean;
+      withCar?: boolean;
+      withTag?: boolean;
+      withCompany?: boolean;
+      withSite?: boolean;
+      withSiteArea?: boolean;
+    } = {},
+    dbParams: DbParams,
+    projectFields?: string[]
+  ): Promise<ReservationDataResult> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getReservations.name;
     DatabaseUtils.checkTenantObject(tenant);
@@ -46,144 +48,324 @@ export default class ReservationStorage {
     dbParams.limit = Utils.checkRecordLimit(dbParams.limit);
     dbParams.skip = Utils.checkRecordSkip(dbParams.skip);
 
-    const filter: FilterParams = {};
-    if (params.reservationIds) {
-      filter.id = { $in: params.reservationIds };
-    } else {
-      if (params.chargingStationIds) {
-        filter.chargingStationId = { $in: params.chargingStationIds };
-      }
-      if (params.connectorIds) {
-        filter.connectorId = { $in: params.connectorIds };
-      }
+    const filters: FilterParams = {};
+    const aggregation = [];
+
+    if (params.search) {
+      filters.$or = [
+        // TODO
+        { '': { $regex: params.search, $options: 'i' } },
+      ];
     }
+    if (!Utils.isEmptyArray(params.reservationIDs)) {
+      filters.id = {
+        $in: params.reservationIDs.map((reservationId) => Utils.convertToInt(reservationId)),
+      };
+    }
+    if (!Utils.isEmptyArray(params.chargingStationIDs)) {
+      filters.chargingStationID = { $in: params.chargingStationIDs };
+    }
+    if (!Utils.isEmptyArray(params.connectorIDs)) {
+      filters.connectorID = {
+        $in: params.connectorIDs.map((connectorID) => Utils.convertToInt(connectorID)),
+      };
+    }
+    if (!Utils.isEmptyArray(params.carIDs)) {
+      filters.carID = { $in: params.carIDs.map((carID) => DatabaseUtils.convertToObjectID(carID)) };
+    }
+    if (!Utils.isEmptyArray(params.userIDs)) {
+      filters.carID = {
+        $in: params.userIDs.map((userID) => DatabaseUtils.convertToObjectID(userID)),
+      };
+    }
+    if (!Utils.isEmptyArray(params.siteIDs)) {
+      DatabaseUtils.pushSiteUserLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation,
+        localField: 'userID',
+        foreignField: 'userID',
+        asField: 'siteUsers',
+      });
+      aggregation.push({
+        $match: {
+          'siteUsers.siteID': {
+            $in: params.siteIDs.map((site) => DatabaseUtils.convertToObjectID(site)),
+          },
+        },
+      });
+    }
+    aggregation.push({ $match: filters });
+
     const reservationsCount = await global.database
       .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
       .countDocuments();
+
     if (dbParams.onlyRecordCount) {
-      await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationsCount);
+      await Logging.traceDatabaseRequestEnd(
+        tenant,
+        MODULE_NAME,
+        METHOD_NAME,
+        startTime,
+        reservationsCount
+      );
       return {
         count: reservationsCount,
-        result: []
+        result: [],
       };
     }
-    const reservations = await global.database
+
+    if (params.withUser) {
+      DatabaseUtils.pushUserLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation: aggregation,
+        asField: 'user',
+        localField: 'userID',
+        foreignField: '_id',
+        oneToOneCardinality: true,
+        oneToOneCardinalityNotNull: false,
+      });
+    }
+    if (params.withCar) {
+      DatabaseUtils.pushCarLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation: aggregation,
+        asField: 'car',
+        localField: 'carID',
+        foreignField: '_id',
+        oneToOneCardinality: true,
+        oneToOneCardinalityNotNull: false,
+      });
+    }
+    if (params.withTag) {
+      DatabaseUtils.pushTagLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation: aggregation,
+        asField: 'tag',
+        localField: 'idTag',
+        foreignField: '_id',
+        oneToOneCardinality: true,
+        oneToOneCardinalityNotNull: false,
+      });
+    }
+    if (params.withChargingStation) {
+      DatabaseUtils.pushChargingStationLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation: aggregation,
+        asField: 'chargingStation',
+        localField: 'chargingStationID',
+        foreignField: '_id',
+        oneToOneCardinality: true,
+        oneToOneCardinalityNotNull: false,
+      });
+    }
+    if (params.withCompany) {
+      DatabaseUtils.pushCompanyLookupInAggregation({
+        tenantID: tenant.id,
+        aggregation: aggregation,
+        asField: 'company',
+        localField: 'companyID',
+        foreignField: '_id',
+        oneToOneCardinality: true,
+        oneToOneCardinalityNotNull: false,
+      });
+    }
+    // Sanitize missing dbParams
+    if (!dbParams.sort) {
+      dbParams.sort = { expiryDate: -1 };
+    }
+    if (!dbParams.skip) {
+      dbParams.skip = 0;
+    }
+    if (!dbParams.limit) {
+      dbParams.limit = 1;
+    }
+
+    // Add Created By / Last Changed By
+    DatabaseUtils.pushCreatedLastChangedInAggregation(tenant.id, aggregation);
+    // Convert Object ID to string
+    DatabaseUtils.pushConvertObjectIDToString(aggregation, 'userID');
+    // Handle the ID
+    // DatabaseUtils.pushRenameDatabaseID(aggregation);
+    // Project
+    DatabaseUtils.projectFields(aggregation, projectFields);
+
+    const reservations = (await global.database
       .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .find(filter)
+      .aggregate(aggregation, DatabaseUtils.buildAggregateOptions())
       .sort(dbParams.sort as Sort)
       .limit(dbParams.limit)
       .skip(dbParams.skip)
-      .toArray();
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservations);
+      .toArray()) as Reservation[];
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      reservations
+    );
     return {
       count: reservations.length,
-      result: reservations
+      result: reservations,
     };
   }
 
-  public static async createReservation(tenant: Tenant, user: User, reservationToSave: Reservation): Promise<void> {
+  public static async getReservation(
+    tenant: Tenant,
+    id: number = Constants.UNKNOWN_NUMBER_ID,
+    params: {
+      withUser?: boolean;
+      withChargingStation?: boolean;
+      withCar?: boolean;
+      withTag?: boolean;
+      withCompany?: boolean;
+      withSite?: boolean;
+      withSiteArea?: boolean;
+      type?: ReservationType;
+      chargingStationIDs?: string[];
+      connectorIDs?: string[];
+    } = {},
+    projectFields?: string[]
+  ): Promise<Reservation> {
+    const startTime = Logging.traceDatabaseRequestStart();
+    const METHOD_NAME = this.getReservation.name;
+    DatabaseUtils.checkTenantObject(tenant);
+    const reservations = await ReservationStorage.getReservations(
+      tenant,
+      {
+        reservationIDs: [id.toString()],
+        withUser: params.withUser,
+        withChargingStation: params.withChargingStation,
+        withCar: params.withCar,
+        withTag: params.withTag,
+        withCompany: params.withCompany,
+        withSite: params.withSite,
+        withSiteArea: params.withSiteArea,
+      },
+      Constants.DB_PARAMS_SINGLE_RECORD,
+      projectFields
+    );
+    const reservation = reservations.count === 1 ? reservations.result.pop() : null;
+    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservation);
+    return reservation;
+  }
+
+  public static async createReservation(
+    tenant: Tenant,
+    reservationToSave: Reservation
+  ): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.createReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
     ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservationToSave);
-    // Check if reservation already exists
-    const reservation = await this.doesReservationExist(tenant,reservationToSave);
-    const timestamp = new Date();
-    if (!reservation) {
-      await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-        .insertOne(
-          {
-            _id: new ObjectId(reservationToSave.id),
-            ...reservationToSave,
-            createdBy: { 'id': user.id },
-            createdOn: timestamp,
-            lastChangedBy: { 'id': user.id },
-            lastChangedOn: timestamp
-          });
-    } else {
-      await this.updateReservation(tenant,
-        {
-          ...reservationToSave,
-          lastChangedBy: { 'id': user.id },
-          lastChangedOn: timestamp
-        });
-    }
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationToSave);
+    const reservation: any = {
+      ...reservationToSave,
+    };
+    DatabaseUtils.addLastChangedCreatedProps(reservation, reservationToSave);
+
+    const createdReservation = await global.database
+      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(reservation.id) },
+        { $set: reservation },
+        { upsert: true, returnDocument: 'after' }
+      );
+    await global.database
+      .getCollection<any>(tenant.id, 'chargingstations')
+      .findOneAndUpdate(
+        { _id: reservationToSave.chargingStationID },
+        { $set: { 'connectors.$[connector].reservation': reservationToSave.id } },
+        { arrayFilters: [{ 'connector.connectorId': { $eq: reservationToSave.connectorID } }] }
+      );
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      createdReservation
+    );
   }
 
-  public static async createReservations(tenant: Tenant, user: User, reservationsToSave: Reservation[]): Promise<void> {
+  public static async createReservations(
+    tenant: Tenant,
+    reservationsToSave: Reservation[]
+  ): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.createReservations.name;
     DatabaseUtils.checkTenantObject(tenant);
-    reservationsToSave.forEach((reservation) => {
-      ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservation);
-    });
     for (const reservation of reservationsToSave) {
-      await ReservationStorage.createReservation(tenant,user,reservation);
+      await ReservationStorage.createReservation(tenant, reservation);
     }
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationsToSave);
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      reservationsToSave
+    );
   }
 
-  public static async updateReservation(tenant: Tenant, reservationToUpdate: Reservation): Promise<void> {
+  public static async updateReservation(
+    tenant: Tenant,
+    reservationsToUpdate: Reservation
+  ): Promise<string> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.updateReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
-    const filter: Filter<Reservation> = {};
-    filter.id = reservationToUpdate.id;
-    ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservationToUpdate);
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .findOneAndUpdate(filter, reservationToUpdate);
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationToUpdate);
+    const reservation: any = { ...reservationsToUpdate };
+    const updatedReservation = await global.database
+      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+      .findOneAndUpdate({ id: reservation.id }, { $set: reservation });
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      updatedReservation
+    );
+    return updatedReservation.value.id.toString();
   }
 
-  public static async updateReservations(tenant: Tenant, reservationsToUpdate: Reservation[]): Promise<void> {
+  public static async updateReservations(
+    tenant: Tenant,
+    reservationsToUpdate: Reservation[]
+  ): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.updateReservations.name;
     DatabaseUtils.checkTenantObject(tenant);
     for (const reservation of reservationsToUpdate) {
       await this.updateReservation(tenant, reservation);
     }
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationsToUpdate);
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      reservationsToUpdate
+    );
   }
 
-  public static async deleteReservation(tenant: Tenant, reservationToDelete: Reservation): Promise<void> {
+  public static async deleteReservation(tenant: Tenant, reservationID: number): Promise<void> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.deleteReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
-    ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservationToDelete);
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).findOneAndDelete(reservationToDelete);
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationToDelete);
-  }
-
-  public static async deleteReservationById(tenant: Tenant, reservationId: number, chargeBoxId?: string): Promise<void> {
-    const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.deleteReservationById.name;
-    DatabaseUtils.checkTenantObject(tenant);
-    const filter: Filter<Reservation> = { id: reservationId };
-    if (!Utils.isNullOrUndefined(chargeBoxId)) {
-      filter.chargingStationId = chargeBoxId;
-    }
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).deleteOne(filter);
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationId);
-  }
-
-  public static async deleteReservations(tenant: Tenant, reservationsToDelete: Reservation[]): Promise<void> {
-    const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.deleteReservations.name;
-    DatabaseUtils.checkTenantObject(tenant);
-    reservationsToDelete.forEach((reservation) => {
-      ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservation);
+    await global.database
+      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+      .deleteOne({ id: reservationID });
+    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, {
+      reservationID,
     });
-    const filter: Filter<Reservation> = { id: { $in: reservationsToDelete.map((r) => r.id) } };
-    await global.database.getCollection<Reservation>(tenant.id, COLLECTION_NAME).deleteMany(filter);
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservationsToDelete);
   }
 
-  private static async doesReservationExist(tenant: Tenant, reservation: Reservation): Promise<boolean> {
+  private static async doesReservationExist(
+    tenant: Tenant,
+    reservation: Reservation
+  ): Promise<boolean> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.doesReservationExist.name;
-    ReservationValidatorStorage.getInstance().validateReservationTemplateSave(reservation);
-    const result = await global.database.getCollection<Reservation>(tenant.id,COLLECTION_NAME).findOne(reservation);
+    const filter: Filter<Reservation> = { id: reservation.id };
+    const result = await global.database
+      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
+      .findOne(filter);
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservation);
     return !Utils.isNullOrUndefined(result);
   }

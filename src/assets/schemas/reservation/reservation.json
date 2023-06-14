@@ -1,0 +1,58 @@
+{
+  "$id": "reservation",
+  "definitions": {
+    "id": {
+      "$ref": "common#/definitions/number-id"
+    },
+    "chargingStationId": {
+      "$ref": "chargingstation#/definitions/id"
+    },
+    "connectorId": {
+      "$ref": "chargingstation#/definitions/connector/properties/connectorId"
+    },
+    "fromDate": {
+      "$ref": "common#/definitions/date"
+    },
+    "toDate": {
+      "$ref": "common#/definitions/date"
+    },
+    "expiryDate": {
+      "$ref": "common#/definitions/date"
+    },
+    "arrivalTime": {
+      "$ref": "common#/definitions/date"
+    },
+    "idTag": {
+      "$ref": "tag#/definitions/id"
+    },
+    "parentIdTag": {
+      "$ref": "tag#/definitions/id"
+    },
+    "userID": {
+      "$ref": "user#/definitions/id"
+    },
+    "carID": {
+      "$ref": "car#/definitions/id"
+    },
+    "siteID": {
+      "$ref": "site#/definitions/id"
+    },
+    "siteAreaID": {
+      "$ref": "site-area#/definitions/id"
+    },
+    "companyID": {
+      "$ref": "company#/definitions/id"
+    },
+    "type": {
+      "type": "string",
+      "sanitize": "mongo",
+      "enum": ["NOW", "PLANNED"]
+    },
+    "status": {
+      "type": "string",
+      "sanitize": "mongo",
+      "enum": ["ACCEPTED", "CANCELLED"]
+    }
+  },
+  "required": ["id", "connectorId", "expiryDate", "idTag", "type"]
+}

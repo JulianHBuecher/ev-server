@@ -1,16 +1,58 @@
 {
-  "$id": "reservation-get",
-  "title": "Get Reservation",
+  "$id": "reservations-get",
+  "title": "Get Reservations",
+  "description": "",
   "type": "object",
   "properties": {
-    "chargingStationIds": {
-      "$ref": "common#/definitions/string-ids"
+    "Search": {
+      "$ref": "common#/definitions/search"
     },
-    "connectorIds": {
-      "$ref": "common#/definitions/number-ids"
+    "WithUser": {
+      "type": "boolean",
+      "sanitize": "mongo"
     },
-    "reservationIds": {
-      "$ref": "common#/definitions/number-ids"
+    "WithChargingStation": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithCar": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithTag": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithCompany": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithSite": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithSiteArea": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "Limit": {
+      "$ref": "common#/definitions/limit"
+    },
+    "SortFields": {
+      "$ref": "common#/definitions/sortFields"
+    },
+    "Skip": {
+      "$ref": "common#/definitions/skip"
+    },
+    "OnlyRecordCount": {
+      "$ref": "common#/definitions/onlyRecordCount"
+    },
+    "ProjectFields": {
+      "$ref": "common#/definitions/projectFields"
+    },
+    "WithAuth": {
+      "$ref": "common#/definitions/withAuth",
+      "default": true
     }
   },
   "required": []

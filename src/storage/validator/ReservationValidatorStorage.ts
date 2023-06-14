@@ -5,9 +5,13 @@ import Schema from '../../types/validator/Schema';
 import SchemaValidator from '../../validator/SchemaValidator';
 
 export default class ReservationValidatorStorage extends SchemaValidator {
-
   private static instance: ReservationValidatorStorage | null = null;
-  private reservationTemplateSave: Schema = JSON.parse(fs.readFileSync(`${global.appRoot}/assets/schemas/reservation/reservation-template-save.json`,'utf-8'));
+  private reservationTemplateSave: Schema = JSON.parse(
+    fs.readFileSync(
+      `${global.appRoot}/assets/schemas/reservation/reservation-template-save.json`,
+      'utf-8'
+    )
+  );
 
   private constructor() {
     super(ReservationValidatorStorage.name);

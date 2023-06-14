@@ -14,17 +14,17 @@ export interface OCPPResetResponse {
 
 export enum OCPPStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export enum OCPPResetStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export enum OCPPResetType {
   HARD = 'Hard',
-  SOFT = 'Soft'
+  SOFT = 'Soft',
 }
 
 export interface OCPPClearCacheResponse {
@@ -33,17 +33,17 @@ export interface OCPPClearCacheResponse {
 
 export enum OCPPClearCacheStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export interface OCPPDataTransferRequest {
-  vendorId: string,
-  messageId?: string,
-  data: string
+  vendorId: string;
+  messageId?: string;
+  data: string;
 }
 
 export interface OCPPDataTransferResponse {
-  status: OCPPDataTransferStatus
+  status: OCPPDataTransferStatus;
 }
 
 export interface OCPPGetConfigurationRequest {
@@ -72,7 +72,7 @@ export enum OCPPConfigurationStatus {
   ACCEPTED = 'Accepted',
   REJECTED = 'Rejected',
   REBOOT_REQUIRED = 'RebootRequired',
-  NOT_SUPPORTED = 'NotSupported'
+  NOT_SUPPORTED = 'NotSupported',
 }
 
 export interface OCPPRemoteStartTransactionRequest {
@@ -95,7 +95,7 @@ export interface OCPPRemoteStopTransactionResponse {
 
 export enum OCPPRemoteStartStopStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export interface OCPPUnlockConnectorRequest {
@@ -109,7 +109,7 @@ export interface OCPPUnlockConnectorResponse {
 export enum OCPPUnlockStatus {
   UNLOCKED = 'Unlocked',
   UNLOCK_FAILED = 'UnlockFailed',
-  NOT_SUPPORTED = 'NotSupported'
+  NOT_SUPPORTED = 'NotSupported',
 }
 
 export interface OCPPSetChargingProfileRequest {
@@ -124,7 +124,7 @@ export interface OCPPSetChargingProfileResponse {
 export enum OCPPChargingProfileStatus {
   ACCEPTED = 'Accepted',
   REJECTED = 'Rejected',
-  NOT_SUPPORTED = 'NotSupported'
+  NOT_SUPPORTED = 'NotSupported',
 }
 
 export interface OCPPGetCompositeScheduleRequest {
@@ -142,7 +142,7 @@ export interface OCPPGetCompositeScheduleResponse {
 
 export enum OCPPGetCompositeScheduleStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export interface OCPPClearChargingProfileRequest {
@@ -158,13 +158,13 @@ export interface OCPPClearChargingProfileResponse {
 
 export enum OCPPClearChargingProfileStatus {
   ACCEPTED = 'Accepted',
-  UNKNOWN = 'Unknown'
+  UNKNOWN = 'Unknown',
 }
 
 export enum OCPPChargingProfilePurposeType {
   CHARGE_POINT_MAX_PROFILE = 'ChargePointMaxProfile',
   TX_DEFAULT_PROFILE = 'TxDefaultProfile',
-  TX_PROFILE = 'TxProfile'
+  TX_PROFILE = 'TxProfile',
 }
 
 export interface OCPPChangeAvailabilityRequest {
@@ -178,13 +178,13 @@ export interface OCPPChangeAvailabilityResponse {
 
 export enum OCPPAvailabilityType {
   INOPERATIVE = 'Inoperative',
-  OPERATIVE = 'Operative'
+  OPERATIVE = 'Operative',
 }
 
 export enum OCPPAvailabilityStatus {
   ACCEPTED = 'Accepted',
   REJECTED = 'Rejected',
-  SCHEDULED = 'Scheduled'
+  SCHEDULED = 'Scheduled',
 }
 
 export interface OCPPGetDiagnosticsRequest {
@@ -219,7 +219,7 @@ export enum OCPPReservationStatus {
   FAULTED = 'Faulted',
   OCCUPIED = 'Occupied',
   REJECTED = 'Rejected',
-  UNAVAILABLE = 'Unavailable'
+  UNAVAILABLE = 'Unavailable',
 }
 
 export interface OCPPReserveNowResponse {
@@ -232,7 +232,7 @@ export interface OCPPCancelReservationRequest {
 
 export enum OCPPCancelReservationStatus {
   ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected'
+  REJECTED = 'Rejected',
 }
 
 export interface OCPPCancelReservationResponse {

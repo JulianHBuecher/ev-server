@@ -263,9 +263,7 @@
     "end-of-signed-session": {
       "title": "Ladevorgang beendet - Signierter Ladevorgang",
       "buttonText": "Ladevorgang anzeigen",
-      "text": [
-        "Ladetransaktion abgeschlossen"
-      ],
+      "text": ["Ladetransaktion abgeschlossen"],
       "table": [
         { "label": "Ladestation", "value": "{{chargeBoxID}}" },
         { "label": "Ladepunkt", "value": "{{connectorId}}" },
@@ -276,7 +274,7 @@
         { "label": "Endzähler", "value": "{{meterStop}} kWh" },
         { "label": "Consumption", "value": "{{totalConsumption}} kWh" },
         { "label": "Kosten", "value": "{{price}}€ {{relativeCost}}€/kWh) (informativ)" },
-        { "label": "Vertrag für", "value":"LOCAL (informativ)" }
+        { "label": "Vertrag für", "value": "LOCAL (informativ)" }
       ]
     },
     "end-of-charge": {
@@ -335,9 +333,7 @@
     "charging-station-registered": {
       "title": "Ladestation Verbunden",
       "buttonText": "Ladestation anzeigen",
-      "text": [
-        "die Ladestation {{chargeBoxID}} wurde mit dem Server verbunden."
-      ]
+      "text": ["die Ladestation {{chargeBoxID}} wurde mit dem Server verbunden."]
     },
     "end-user-error-notification": {
       "title": "Ein Nutzer hat einen Fehler gemeldet",
@@ -486,9 +482,7 @@
     "billing-periodic-operation-failed": {
       "title": "Abrechnung - Periodische Durchführung Fehlgeschlagen",
       "buttonText": "Zu {{tenantName}} navigieren",
-      "text": [
-        "es war nicht möglich {{nbrInvoicesInError}} Rechnungen zu verarbeiten."
-      ]
+      "text": ["es war nicht möglich {{nbrInvoicesInError}} Rechnungen zu verarbeiten."]
     },
     "billing-account-activated": {
       "title": "Abrechnungskonto aktiviert",
@@ -517,9 +511,7 @@
     "account-verification-notification-active": {
       "title": "Benutzerkonto verifiziert",
       "buttonText": "Zu {{tenantName}} navigieren",
-      "text": [
-        "Ihr Benutzerkonto wurde verifiziert und erfolgreich aktiviert."
-      ]
+      "text": ["Ihr Benutzerkonto wurde verifiziert und erfolgreich aktiviert."]
     },
     "account-verification-notification-inactive": {
       "title": "Benutzerkonto verifiziert",

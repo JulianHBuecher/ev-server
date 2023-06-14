@@ -1,109 +1,303 @@
-
 import { NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+
+import AppAuthError from '../../../../exception/AppAuthError';
 import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
-import { Action } from '../../../../types/Authorization';
+import { Action, Entity } from '../../../../types/Authorization';
 import { ReservationDataResult } from '../../../../types/DataResult';
+import { HTTPAuthError } from '../../../../types/HTTPError';
+import { HttpReservationsGetRequest } from '../../../../types/requests/HttpReservationRequest';
 import Reservation from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
-import { HttpReservationCancelRequest, HttpReservationGetRequest, HttpReservationUpdateRequest, HttpReservationsGetRequest } from '../../../../types/requests/HttpReservationRequest';
+import { TenantComponents } from '../../../../types/Tenant';
 import Constants from '../../../../utils/Constants';
+import Logging from '../../../../utils/Logging';
+import LoggingHelper from '../../../../utils/LoggingHelper';
+import Utils from '../../../../utils/Utils';
 import ReservationValidatorRest from '../validator/ReservationValidatorRest';
 import AuthorizationService from './AuthorizationService';
-import Utils from '../../../../utils/Utils';
+import UtilsService from './UtilsService';
 
 const MODULE_NAME = 'ReservationService';
 
 export default class ReservationService {
-
-  public static async handleGetReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
-    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationGetReq(req.body);
-    res.json(await ReservationService.getReservation(req, filteredRequest));
-    next();
-  }
-
-  public static async handleGetReservations(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
-    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationsGetReq(req.query);
-    res.json(await ReservationService.getReservations(req, filteredRequest));
-    next();
-  }
-
-  public static async handleCreateReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
-    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCreateReq(req.body);
-    await ReservationService.saveReservation(req,filteredRequest);
-    res.json({ status: StatusCodes.CREATED });
-    next();
-  }
-
-  public static async handleUpdateReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
-    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationUpdateReq(req.body);
-    await ReservationService.updateReservation(req,filteredRequest);
-    res.json({ status: StatusCodes.NO_CONTENT });
-    next();
-  }
-
-  public static async handleDeleteReservation(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
-    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCancelReq(req.body);
-    await ReservationService.cancelReservation(req,filteredRequest);
-    res.json({ status: StatusCodes.OK });
-    next();
-  }
-
-  private static async getReservation(req: Request, filteredRequest: HttpReservationGetRequest,
-      authAction: Action = Action.READ): Promise<Reservation> {
-    const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
-      req.tenant, req.user, authAction, filteredRequest, false);
+  public static async handleGetReservation(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.READ,
+      Entity.RESERVATION,
+      MODULE_NAME,
+      'handleGetReservation'
+    );
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationGetReq(
+      req.query
+    );
+    const authorizations = await AuthorizationService.checkAndGetReservationAuthorizations(
+      req.tenant,
+      req.user,
+      filteredRequest,
+      Action.READ
+    );
     if (!authorizations.authorized) {
-      return;
+      throw new AppAuthError({
+        errorCode: HTTPAuthError.FORBIDDEN,
+        user: req.user,
+        action: Action.READ,
+        entity: Entity.RESERVATION,
+        module: MODULE_NAME,
+        method: ReservationService.handleGetReservation.name,
+        value: filteredRequest.ID.toString(),
+      });
     }
-    return await ReservationStorage.getReservationById(req.tenant,filteredRequest.args.id,filteredRequest.chargingStationId,filteredRequest.args.connectorId);
+    const reservation = await ReservationService.getReservation(req, filteredRequest.ID);
+    UtilsService.assertObjectExists(
+      action,
+      reservation,
+      `Reservation ID '${filteredRequest.ID}' does not exist`,
+      MODULE_NAME,
+      ReservationService.getReservation.name,
+      req.user
+    );
+    if (authorizations.projectFields) {
+      reservation.projectFields = authorizations.projectFields;
+    }
+    if (authorizations.metadata) {
+      reservation.metadata = authorizations.metadata;
+    }
+    await AuthorizationService.addReservationAuthorizations(
+      req.tenant,
+      req.user,
+      reservation,
+      authorizations
+    );
+    res.json(reservation);
+    next();
   }
 
-  private static async getReservations(req: Request, filteredRequest: HttpReservationsGetRequest,
-      authAction: Action = Action.LIST, additionalFilters: Record<string, any> = {}): Promise<ReservationDataResult> {
+  public static async handleGetReservations(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.LIST,
+      Entity.RESERVATION,
+      MODULE_NAME,
+      ReservationService.handleGetReservations.name
+    );
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationsGetReq(
+      req.query
+    );
     const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
-      req.tenant, req.user, authAction, filteredRequest, false);
+      req.tenant,
+      req.user,
+      Action.LIST,
+      filteredRequest,
+      false
+    );
     if (!authorizations.authorized) {
-      return Constants.DB_EMPTY_DATA_RESULT;
+      UtilsService.sendEmptyDataResult(res, next);
     }
+    const reservations = await ReservationService.getReservations(
+      req,
+      filteredRequest,
+      {},
+      authorizations.projectFields
+    );
+    if (authorizations.projectFields) {
+      reservations.projectFields = authorizations.projectFields;
+    }
+    if (filteredRequest.WithAuth) {
+      await AuthorizationService.addReservationsAuthorizations(
+        req.tenant,
+        req.user,
+        reservations,
+        authorizations
+      );
+    }
+    res.json(reservations);
+    next();
+  }
+
+  public static async handleCreateReservation(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.CREATE,
+      Entity.RESERVATION,
+      MODULE_NAME,
+      ReservationService.handleCreateReservation.name
+    );
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCreateReq(
+      req.body
+    );
+    await AuthorizationService.checkAndGetReservationAuthorizations(
+      req.tenant,
+      req.user,
+      {},
+      Action.CREATE,
+      filteredRequest as Reservation
+    );
+    if (filteredRequest.userID) {
+      await UtilsService.checkAndGetUserAuthorization(
+        req.tenant,
+        req.user,
+        filteredRequest.userID,
+        Action.READ,
+        action
+      );
+    }
+    const reservation: Reservation = {
+      ...filteredRequest,
+      createdBy: { id: req.user.id },
+      createdOn: new Date(),
+      lastChangedBy: { id: req.user.id },
+      lastChangedOn: new Date(),
+    };
+    await ReservationService.saveReservation(req, reservation);
+    await Logging.logInfo({
+      ...LoggingHelper.getReservationProperties(reservation),
+      tenantID: req.tenant.id,
+      user: req.user,
+      module: MODULE_NAME,
+      method: ReservationService.handleCreateReservation.name,
+      message: `'${Utils.buildReservationName(reservation)}' has been created successfully`,
+      action: action,
+      detailedMessages: { reservation },
+    });
+    res.json(Object.assign({ id: reservation.id }, Constants.REST_RESPONSE_SUCCESS));
+    next();
+  }
+
+  public static async handleUpdateReservation(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.UPDATE,
+      Entity.RESERVATION,
+      MODULE_NAME,
+      ReservationService.handleUpdateReservation.name
+    );
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationUpdateReq(
+      req.body
+    );
+    await AuthorizationService.checkAndGetReservationAuthorizations(
+      req.tenant,
+      req.user,
+      {},
+      Action.UPDATE,
+      filteredRequest as Reservation
+    );
+    await ReservationService.updateReservation(req, {
+      ...filteredRequest,
+      lastChangedBy: { id: req.user.id },
+      lastChangedOn: new Date(),
+    });
+    res.json(Constants.REST_RESPONSE_SUCCESS);
+    next();
+  }
+
+  public static async handleDeleteReservation(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationDeleteReq(
+      req.query
+    );
+    UtilsService.assertIdIsProvided(
+      action,
+      filteredRequest.ID,
+      MODULE_NAME,
+      ReservationService.deleteReservation.name,
+      req.user
+    );
+    await ReservationService.deleteReservation(req, filteredRequest.ID);
+    res.json(Constants.REST_RESPONSE_SUCCESS);
+    next();
+  }
+
+  private static async getReservation(
+    req: Request,
+    id: number = Constants.UNKNOWN_NUMBER_ID,
+    additionalFilters: Record<string, any> = {},
+    projectFields?: string[]
+  ): Promise<Reservation> {
+    return await ReservationStorage.getReservation(
+      req.tenant,
+      id,
+      {
+        ...additionalFilters,
+        withChargingStation: true,
+        withTag: true,
+      },
+      projectFields
+    );
+  }
+
+  private static async getReservations(
+    req: Request,
+    filteredRequest: HttpReservationsGetRequest,
+    additionalFilters: Record<string, any> = {},
+    projectFields?: string[]
+  ): Promise<ReservationDataResult> {
     return await ReservationStorage.getReservations(
       req.tenant,
       {
-        reservationIds: filteredRequest.reservationIds ? filteredRequest.reservationIds.split('|').map((id) => Utils.convertToInt(id)) : null,
-        chargingStationIds: filteredRequest.chargingStationIds ? filteredRequest.chargingStationIds.split('|') : null,
-        connectorIds: filteredRequest.connectorIds ? filteredRequest.connectorIds.split('|').map((id) => Utils.convertToInt(id)) : null
+        search: filteredRequest.Search,
+        withUser: filteredRequest.WithUser,
+        withCar: filteredRequest.WithCar,
+        withChargingStation: filteredRequest.WithChargingStation,
+        withCompany: filteredRequest.WithCompany,
+        withSite: filteredRequest.WithSite,
+        withSiteArea: filteredRequest.WithSiteArea,
+        withTag: filteredRequest.WithTag,
+        ...additionalFilters,
       },
-      Constants.DB_PARAMS_MAX_LIMIT);
+      {
+        limit: filteredRequest.Limit ?? Constants.DB_PARAMS_MAX_LIMIT.limit,
+        sort:
+          UtilsService.httpSortFieldsToMongoDB(filteredRequest.SortFields) ??
+          Constants.DB_PARAMS_MAX_LIMIT.sort,
+        skip: filteredRequest.Skip ?? Constants.DB_PARAMS_MAX_LIMIT.skip,
+        onlyRecordCount: filteredRequest.OnlyRecordCount,
+      },
+      projectFields
+    );
   }
 
-  private static async saveReservation(req: Request, filteredRequest: Reservation,
-      authAction: Action = Action.CREATE): Promise<void> {
-    const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
-      req.tenant, req.user, authAction, {}, false);
-    if (!authorizations.authorized) {
-      return;
-    }
-    await ReservationStorage.createReservation(req.tenant, req.user.user, { ...filteredRequest });
+  private static async saveReservation(req: Request, reservation: Reservation): Promise<void> {
+    await ReservationStorage.createReservation(req.tenant, reservation);
   }
 
-  private static async updateReservation(req: Request, filteredRequest: HttpReservationUpdateRequest,
-      authAction: Action = Action.UPDATE): Promise<void> {
-    const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
-      req.tenant, req.user, authAction, filteredRequest, false);
-    if (!authorizations.authorized) {
-      return;
-    }
-    await ReservationStorage.updateReservation(req.tenant,{ ...filteredRequest.args });
+  private static async updateReservation(req: Request, reservation: Reservation): Promise<void> {
+    await ReservationStorage.updateReservation(req.tenant, reservation);
   }
 
-  private static async cancelReservation(req: Request, filteredRequest: HttpReservationCancelRequest,
-      authAction: Action = Action.DELETE): Promise<void> {
-    const authorizations = await AuthorizationService.checkAndGetReservationsAuthorizations(
-      req.tenant, req.user, authAction, filteredRequest, false);
-    if (!authorizations.authorized) {
-      return;
-    }
-    await ReservationStorage.deleteReservationById(req.tenant,filteredRequest.args.id,filteredRequest.chargingStationId);
+  private static async deleteReservation(
+    req: Request,
+    id: number = Constants.UNKNOWN_NUMBER_ID
+  ): Promise<void> {
+    await ReservationStorage.deleteReservation(req.tenant, id);
   }
-
 }

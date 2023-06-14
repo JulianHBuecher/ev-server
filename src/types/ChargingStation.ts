@@ -1,5 +1,15 @@
-import { AuthorizationActions, ChargingStationAuthorizationActions, ConnectorAuthorizationActions } from './Authorization';
-import { ChargePointStatus, OCPPFirmwareStatus, OCPPPhase, OCPPProtocol, OCPPVersion } from './ocpp/OCPPServer';
+import {
+  AuthorizationActions,
+  ChargingStationAuthorizationActions,
+  ConnectorAuthorizationActions,
+} from './Authorization';
+import {
+  ChargePointStatus,
+  OCPPFirmwareStatus,
+  OCPPPhase,
+  OCPPProtocol,
+  OCPPVersion,
+} from './ocpp/OCPPServer';
 
 import { ChargingRateUnitType } from './ChargingProfile';
 import CreatedUpdatedProps from './CreatedUpdatedProps';
@@ -11,8 +21,11 @@ import { OICPIdentification } from './oicp/OICPIdentification';
 import Site from './Site';
 import SiteArea from './SiteArea';
 import User from './User';
+import Reservation from './Reservation';
 
-export default interface ChargingStation extends CreatedUpdatedProps, ChargingStationAuthorizationActions {
+export default interface ChargingStation
+  extends CreatedUpdatedProps,
+    ChargingStationAuthorizationActions {
   id?: string;
   templateHash?: string;
   templateHashCapabilities?: string;
@@ -57,7 +70,7 @@ export default interface ChargingStation extends CreatedUpdatedProps, ChargingSt
   connectors: Connector[];
   backupConnectors: Connector[];
   remoteAuthorizations: RemoteAuthorization[];
-  currentIPAddress?: string|string[];
+  currentIPAddress?: string | string[];
   siteArea?: SiteArea;
   site?: Site;
   capabilities?: ChargingStationCapabilities;
@@ -164,6 +177,7 @@ export interface Connector extends ConnectorAuthorizationActions {
   chargePointID?: number;
   phaseAssignmentToGrid?: PhaseAssignmentToGrid;
   tariffID?: string;
+  reservationID?: number;
 }
 
 export interface PhaseAssignmentToGrid {
@@ -194,12 +208,12 @@ export enum SiteAreaLimitSource {
 export enum ConnectorCurrentLimitSource {
   CHARGING_PROFILE = 'CP',
   STATIC_LIMITATION = 'SL',
-  CONNECTOR = 'CO'
+  CONNECTOR = 'CO',
 }
 
 export enum CurrentType {
   AC = 'AC',
-  DC = 'DC'
+  DC = 'DC',
 }
 
 export interface ChargePoint {
@@ -259,7 +273,7 @@ export interface ChargingStationTemplate extends CreatedUpdatedProps, Authorizat
       supportedOcppVersions: string[];
       parameters: Record<string, string>;
     }[];
-  }
+  };
 }
 
 export interface ChargingStationTemplateConnector {

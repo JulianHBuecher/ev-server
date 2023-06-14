@@ -46,14 +46,16 @@ export default class GlobalRouterV1 {
   }
 
   protected buildRouteAuth(): void {
-    this.router.use('/auth',
+    this.router.use(
+      '/auth',
       CommonService.checkTenantValidity.bind(this),
       new AuthRouter().buildRoutes()
     );
   }
 
   protected buildRouteAPI(): void {
-    this.router.use('/api',
+    this.router.use(
+      '/api',
       AuthService.authenticate(),
       SessionHashService.checkUserAndTenantValidity.bind(this),
       [
@@ -79,13 +81,16 @@ export default class GlobalRouterV1 {
         new TransactionRouter().buildRoutes(),
         new UserRouter().buildRoutes(),
         new ReservationRouter().buildRoutes(),
-      ]);
+      ]
+    );
   }
 
   protected buildRouteUtil(): void {
-    this.router.use('/util',
+    this.router.use(
+      '/util',
       CommonService.checkTenantValidity.bind(this),
-      new UtilRouter().buildRoutes());
+      new UtilRouter().buildRoutes()
+    );
   }
 
   protected buildRouteDocs(): void {

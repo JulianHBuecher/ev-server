@@ -1,4 +1,9 @@
-import { IntegrationSettings, PricingSettingsType, SettingDB, TechnicalSettings } from '../../../../types/Setting';
+import {
+  IntegrationSettings,
+  PricingSettingsType,
+  SettingDB,
+  TechnicalSettings,
+} from '../../../../types/Setting';
 import { NextFunction, Request, Response } from 'express';
 
 import { Action } from '../../../../types/Authorization';
@@ -20,65 +25,120 @@ import _ from 'lodash';
 const MODULE_NAME = 'SettingService';
 
 export default class SettingService {
-  public static async handleDeleteSetting(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleDeleteSetting(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
     const settingID = SettingValidatorRest.getInstance().validateSettingDeleteReq(req.query).ID;
     // Get
-    const setting = await UtilsService.checkAndGetSettingAuthorization(req.tenant, req.user, settingID, Action.DELETE, action);
+    const setting = await UtilsService.checkAndGetSettingAuthorization(
+      req.tenant,
+      req.user,
+      settingID,
+      Action.DELETE,
+      action
+    );
     // Delete
     await SettingStorage.deleteSetting(req.tenant, settingID);
     // Log
     await Logging.logInfo({
       tenantID: req.tenant.id,
-      user: req.user, module: MODULE_NAME, method: 'handleDeleteSetting',
+      user: req.user,
+      module: MODULE_NAME,
+      method: 'handleDeleteSetting',
       message: `Setting '${setting.identifier}' has been deleted successfully`,
       action: action,
-      detailedMessages: { setting }
+      detailedMessages: { setting },
     });
     res.json(Constants.REST_RESPONSE_SUCCESS);
     next();
   }
 
-  public static async handleGetSetting(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleGetSetting(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
     const settingID = SettingValidatorRest.getInstance().validateSettingGetReq(req.query).ID;
     // Get it
-    const setting = await UtilsService.checkAndGetSettingAuthorization(req.tenant, req.user, settingID, Action.READ, action, {}, {}, true);
+    const setting = await UtilsService.checkAndGetSettingAuthorization(
+      req.tenant,
+      req.user,
+      settingID,
+      Action.READ,
+      action,
+      {},
+      {},
+      true
+    );
     // Process the sensitive data if any
     SettingService.hashSensitiveData(setting);
     res.json(setting);
     next();
   }
 
-  public static async handleGetSettingByIdentifier(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleGetSettingByIdentifier(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
-    const settingID = SettingValidatorRest.getInstance().validateSettingGetByIdentifierReq(req.query).Identifier;
+    const settingID = SettingValidatorRest.getInstance().validateSettingGetByIdentifierReq(
+      req.query
+    ).Identifier;
     // Get it
-    const setting = await UtilsService.checkAndGetSettingAuthorization(req.tenant, req.user, settingID, Action.READ, action, {}, { identifier: settingID }, true);
+    const setting = await UtilsService.checkAndGetSettingAuthorization(
+      req.tenant,
+      req.user,
+      settingID,
+      Action.READ,
+      action,
+      {},
+      { identifier: settingID },
+      true
+    );
     // Process the sensitive data if any
     SettingService.hashSensitiveData(setting);
     res.json(setting);
     next();
   }
 
-  public static async handleGetSettings(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleGetSettings(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
     const filteredRequest = SettingValidatorRest.getInstance().validateSettingsGetReq(req.query);
     // Get authorization filters
-    const authorizations = await AuthorizationService.checkAndGetSettingsAuthorizations(req.tenant, req.user, Action.LIST, filteredRequest, false);
+    const authorizations = await AuthorizationService.checkAndGetSettingsAuthorizations(
+      req.tenant,
+      req.user,
+      Action.LIST,
+      filteredRequest,
+      false
+    );
     if (!authorizations.authorized) {
       UtilsService.sendEmptyDataResult(res, next);
     }
     // Get the settings
-    const settings = await SettingStorage.getSettings(req.tenant,
+    const settings = await SettingStorage.getSettings(
+      req.tenant,
       {
         identifier: filteredRequest.Identifier,
-        ...authorizations.filters
+        ...authorizations.filters,
       },
       {
         limit: filteredRequest.Limit,
         skip: filteredRequest.Skip,
-        sort: filteredRequest.SortFields
+        sort: filteredRequest.SortFields,
       },
       authorizations.projectFields
     );
@@ -87,7 +147,13 @@ export default class SettingService {
       settings.projectFields = authorizations.projectFields;
     }
     // Add Auth flags
-    await AuthorizationService.addSettingsAuthorizations(req.tenant, req.user, settings, authorizations, filteredRequest);
+    await AuthorizationService.addSettingsAuthorizations(
+      req.tenant,
+      req.user,
+      settings,
+      authorizations,
+      filteredRequest
+    );
     // Process the sensitive data if any
     for (const setting of settings.result) {
       // Process the sensitive data if any
@@ -97,35 +163,64 @@ export default class SettingService {
     next();
   }
 
-  public static async handleCreateSetting(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleCreateSetting(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
     const filteredRequest = SettingService.filterSetting(action, req);
     // Check auth
-    await AuthorizationService.checkAndGetSettingAuthorizations(req.tenant,req.user, {}, Action.CREATE, filteredRequest);
+    await AuthorizationService.checkAndGetSettingAuthorizations(
+      req.tenant,
+      req.user,
+      {},
+      Action.CREATE,
+      filteredRequest
+    );
     // Process the sensitive data if any
     await Cypher.encryptSensitiveDataInJSON(req.tenant, filteredRequest);
     // Update timestamp
-    filteredRequest.createdBy = { 'id': req.user.id };
+    filteredRequest.createdBy = { id: req.user.id };
     filteredRequest.createdOn = new Date();
     // Save Setting
     filteredRequest.id = await SettingStorage.saveSettings(req.tenant, filteredRequest);
     // Log
     await Logging.logInfo({
       tenantID: req.tenant.id,
-      user: req.user, module: MODULE_NAME, method: 'handleCreateSetting',
+      user: req.user,
+      module: MODULE_NAME,
+      method: 'handleCreateSetting',
       message: `Setting '${filteredRequest.identifier}' has been created successfully`,
       action: action,
-      detailedMessages: { params: filteredRequest }
+      detailedMessages: { params: filteredRequest },
     });
-    res.status(StatusCodes.OK).json(Object.assign({ id: filteredRequest.id }, Constants.REST_RESPONSE_SUCCESS));
+    res
+      .status(StatusCodes.OK)
+      .json(Object.assign({ id: filteredRequest.id }, Constants.REST_RESPONSE_SUCCESS));
     next();
   }
 
-  public static async handleUpdateSetting(action: ServerAction, req: Request, res: Response, next: NextFunction): Promise<void> {
+  public static async handleUpdateSetting(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     // Filter
     const filteredRequest = SettingService.filterSetting(action, req);
     // Get Setting
-    const setting = await UtilsService.checkAndGetSettingAuthorization(req.tenant, req.user, filteredRequest.id, Action.UPDATE, action, {}, {}, true);
+    const setting = await UtilsService.checkAndGetSettingAuthorization(
+      req.tenant,
+      req.user,
+      filteredRequest.id,
+      Action.UPDATE,
+      action,
+      {},
+      {},
+      true
+    );
     // Process the sensitive data if any
     // Preprocess the data to take care of updated values
     if (filteredRequest.sensitiveData) {
@@ -135,7 +230,7 @@ export default class SettingService {
           message: `The property 'sensitiveData' for Setting with ID '${filteredRequest.id}' is not an array`,
           module: MODULE_NAME,
           method: 'handleUpdateSetting',
-          user: req.user
+          user: req.user,
         });
       }
       // Process sensitive properties
@@ -164,17 +259,21 @@ export default class SettingService {
       filteredRequest.sensitiveData = [];
     }
     // Update timestamp
-    setting.lastChangedBy = { 'id': req.user.id };
+    setting.lastChangedBy = { id: req.user.id };
     setting.lastChangedOn = new Date();
     if (filteredRequest.identifier === TechnicalSettings.CRYPTO) {
       // Check supported algorithm
-      if (!Constants.CRYPTO_SUPPORTED_ALGORITHM.includes(
-        Utils.buildCryptoAlgorithm(filteredRequest.content.crypto.keyProperties))) {
+      if (
+        !Constants.CRYPTO_SUPPORTED_ALGORITHM.includes(
+          Utils.buildCryptoAlgorithm(filteredRequest.content.crypto.keyProperties)
+        )
+      ) {
         throw new AppError({
           errorCode: HTTPError.CRYPTO_ALGORITHM_NOT_SUPPORTED,
           message: 'Crypto algorithm not supported',
-          module: MODULE_NAME, method: 'handleUpdateSetting',
-          user: req.user
+          module: MODULE_NAME,
+          method: 'handleUpdateSetting',
+          user: req.user,
         });
       }
       // Check crypto key
@@ -183,8 +282,9 @@ export default class SettingService {
         throw new AppError({
           errorCode: HTTPError.CRYPTO_KEY_LENGTH_INVALID,
           message: 'Crypto key length is invalid',
-          module: MODULE_NAME, method: 'handleUpdateSetting',
-          user: req.user
+          module: MODULE_NAME,
+          method: 'handleUpdateSetting',
+          user: req.user,
         });
       }
       // Check if config is valid
@@ -194,8 +294,9 @@ export default class SettingService {
         throw new AppError({
           errorCode: HTTPError.CRYPTO_CHECK_FAILED,
           message: 'Crypto check failed to run: ' + error.message,
-          module: MODULE_NAME, method: 'handleUpdateSetting',
-          user: req.user
+          module: MODULE_NAME,
+          method: 'handleUpdateSetting',
+          user: req.user,
         });
       }
       // Check if migration is on-going
@@ -203,11 +304,14 @@ export default class SettingService {
         throw new AppError({
           errorCode: HTTPError.CRYPTO_MIGRATION_IN_PROGRESS,
           message: 'Crypto migration is in progress',
-          module: MODULE_NAME, method: 'handleUpdateSetting',
-          user: req.user
+          module: MODULE_NAME,
+          method: 'handleUpdateSetting',
+          user: req.user,
         });
       } else {
-        if (Utils.hash(filteredRequest.content.crypto.key) !== Utils.hash(setting.content.crypto.key)) {
+        if (
+          Utils.hash(filteredRequest.content.crypto.key) !== Utils.hash(setting.content.crypto.key)
+        ) {
           filteredRequest.content.crypto.migrationToBeDone = true;
         }
         filteredRequest.content.crypto.formerKey = setting.content.crypto.key;
@@ -225,21 +329,27 @@ export default class SettingService {
     // Log
     await Logging.logInfo({
       tenantID: req.tenant.id,
-      user: req.user, module: MODULE_NAME, method: 'handleUpdateSetting',
+      user: req.user,
+      module: MODULE_NAME,
+      method: 'handleUpdateSetting',
       message: `Setting '${filteredRequest.id}' has been updated successfully`,
       action: action,
-      detailedMessages: { filteredRequest }
+      detailedMessages: { filteredRequest },
     });
     // Pricing Checks on Currency Modification
-    if (filteredRequest.identifier === TenantComponents.PRICING
-      && setting.content?.type === PricingSettingsType.SIMPLE
-      && setting.content?.simple.currency !== filteredRequest.content?.simple?.currency) {
+    if (
+      filteredRequest.identifier === TenantComponents.PRICING &&
+      setting.content?.type === PricingSettingsType.SIMPLE &&
+      setting.content?.simple.currency !== filteredRequest.content?.simple?.currency
+    ) {
       // Force a user logout
       throw new AppError({
         errorCode: HTTPError.TENANT_COMPONENT_CHANGED,
-        message: 'Pricing Settings - Currency has been updated. A log out is necessary to benefit from the changes',
-        module: MODULE_NAME, method: 'handleUpdateSetting',
-        user: req.user
+        message:
+          'Pricing Settings - Currency has been updated. A log out is necessary to benefit from the changes',
+        module: MODULE_NAME,
+        method: 'handleUpdateSetting',
+        user: req.user,
       });
     }
     res.json(Constants.REST_RESPONSE_SUCCESS);
@@ -286,7 +396,7 @@ export default class SettingService {
           action,
           message: `Unknown setting ${req.body.identifier as string}`,
           detailedMessages: { setting: req.body },
-          errorCode: HTTPError.GENERAL_ERROR
+          errorCode: HTTPError.GENERAL_ERROR,
         });
     }
   }

@@ -38,7 +38,6 @@ import config from '../../config';
 chai.use(chaiSubset);
 
 export default class CentralServerService {
-
   private static _defaultInstance = new CentralServerService();
   public authenticatedApi: AuthenticatedBaseApi;
   public assetApi: AssetApi;
@@ -70,8 +69,14 @@ export default class CentralServerService {
   private _authenticatedUser: Partial<User>;
   private _authenticatedSuperAdmin: Partial<User>;
 
-  public constructor(tenantSubdomain = null, user: Partial<User> = null, superAdminUser: Partial<User> = null) {
-    this._baseURL = `${config.get('server.scheme')}://${config.get('server.host')}:${config.get('server.port')}`;
+  public constructor(
+    tenantSubdomain = null,
+    user: Partial<User> = null,
+    superAdminUser: Partial<User> = null
+  ) {
+    this._baseURL = `${config.get('server.scheme')}://${config.get('server.host')}:${config.get(
+      'server.port'
+    )}`;
     // Create the Base API
     this._baseApi = new BaseApi(this._baseURL);
     if (user) {
@@ -79,7 +84,7 @@ export default class CentralServerService {
     } else {
       this._authenticatedUser = {
         email: config.get('admin.username'),
-        password: config.get('admin.password')
+        password: config.get('admin.password'),
       };
     }
     if (superAdminUser) {
@@ -87,19 +92,36 @@ export default class CentralServerService {
     } else {
       this._authenticatedSuperAdmin = {
         email: config.get('superadmin.username'),
-        password: config.get('superadmin.password')
+        password: config.get('superadmin.password'),
       };
     }
     // Create the Authenticated API
     if (!tenantSubdomain && tenantSubdomain !== '') {
-      this.authenticatedApi = new AuthenticatedBaseApi(this._baseURL, this._authenticatedUser.email, this._authenticatedUser.password, ContextDefinition.TENANT_CONTEXTS.TENANT_WITH_ALL_COMPONENTS);
+      this.authenticatedApi = new AuthenticatedBaseApi(
+        this._baseURL,
+        this._authenticatedUser.email,
+        this._authenticatedUser.password,
+        ContextDefinition.TENANT_CONTEXTS.TENANT_WITH_ALL_COMPONENTS
+      );
     } else {
-      this.authenticatedApi = new AuthenticatedBaseApi(this._baseURL, this._authenticatedUser.email, this._authenticatedUser.password, tenantSubdomain);
+      this.authenticatedApi = new AuthenticatedBaseApi(
+        this._baseURL,
+        this._authenticatedUser.email,
+        this._authenticatedUser.password,
+        tenantSubdomain
+      );
     }
     // Super Admin
-    this.authenticatedSuperAdminApi = new AuthenticatedBaseApi(this._baseURL, this._authenticatedSuperAdmin.email, this._authenticatedSuperAdmin.password, '');
+    this.authenticatedSuperAdminApi = new AuthenticatedBaseApi(
+      this._baseURL,
+      this._authenticatedSuperAdmin.email,
+      this._authenticatedSuperAdmin.password,
+      ''
+    );
     this.tenantApi = new TenantApi(this.authenticatedSuperAdminApi, this._baseApi);
-    this.chargingStationTemplateApi = new ChargingStationTemplateApi(this.authenticatedSuperAdminApi);
+    this.chargingStationTemplateApi = new ChargingStationTemplateApi(
+      this.authenticatedSuperAdminApi
+    );
     this.carApiSuperTenant = new CarApi(this.authenticatedSuperAdminApi);
     // Admin
     this.companyApi = new CompanyApi(this.authenticatedApi);
@@ -114,7 +136,9 @@ export default class CentralServerService {
     this.ocpiEndpointApi = new OCPIEndpointApi(this.authenticatedApi);
     this.oicpEndpointApi = new OICPEndpointApi(this.authenticatedApi);
     this.authenticationApi = new AuthenticationApi(this._baseApi);
-    this.mailApi = new MailApi(new BaseApi(`http://${config.get('mailServer.host')}:${config.get('mailServer.port')}`));
+    this.mailApi = new MailApi(
+      new BaseApi(`http://${config.get('mailServer.host')}:${config.get('mailServer.port')}`)
+    );
     this.statisticsApi = new StatisticsApi(this.authenticatedApi);
     this.registrationApi = new RegistrationTokenApi(this.authenticatedApi);
     this.billingApi = new BillingApi(this.authenticatedApi);
@@ -221,7 +245,6 @@ export default class CentralServerService {
     }
     // Let the caller to handle response
     return response;
-
   }
 
   public async updateEntity(entityApi, entity, performCheck = true) {

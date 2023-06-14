@@ -29,15 +29,8 @@
           "sanitize": "mongo"
         }
       },
-      "required": [
-        "connectorId",
-        "expiryDate",
-        "idTag",
-        "reservationId"
-      ]
+      "required": ["connectorId", "expiryDate", "idTag", "reservationId"]
     }
   },
-  "required": [
-    "chargingStationId"
-  ]
+  "required": ["chargingStationId"]
 }

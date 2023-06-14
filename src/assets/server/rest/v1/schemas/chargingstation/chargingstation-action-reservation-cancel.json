@@ -14,12 +14,8 @@
           "sanitize": "mongo"
         }
       },
-      "required": [
-        "reservationId"
-      ]
+      "required": ["reservationId"]
     }
   },
-  "required": [
-    "chargingStationId"
-  ]
+  "required": ["chargingStationId"]
 }

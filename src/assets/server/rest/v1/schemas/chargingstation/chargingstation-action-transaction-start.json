@@ -51,13 +51,8 @@
           "$ref": "tag#/definitions/visualID"
         }
       },
-      "anyOf": [
-        { "required": ["tagID"] },
-        { "required": ["visualTagID"] }
-      ]
+      "anyOf": [{ "required": ["tagID"] }, { "required": ["visualTagID"] }]
     }
   },
-  "required": [
-    "chargingStationID"
-  ]
+  "required": ["chargingStationID"]
 }

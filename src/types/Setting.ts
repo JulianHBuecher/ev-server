@@ -21,7 +21,7 @@ export enum IntegrationSettings {
   BILLING_PLATFORM = 'billingPlatform',
   CAR = 'car',
   ORGANIZATION = 'organization',
-  STATISTICS = 'statistics'
+  STATISTICS = 'statistics',
 }
 
 export interface Setting extends SettingAuthorizationActions, CreatedUpdatedProps {
@@ -46,18 +46,18 @@ export interface SettingLink {
 
 export interface SettingDBContent {
   type:
-  RoamingSettingsType
-  | AnalyticsSettingsType
-  | RefundSettingsType
-  | PricingSettingsType
-  | BillingSettingsType
-  | SmartChargingSettingsType
-  | AssetSettingsType
-  | SmartChargingContentType
-  | CryptoSettingsType
-  | UserSettingsType
-  | CarConnectorSettingsType
-  | TaskSettingsType;
+    | RoamingSettingsType
+    | AnalyticsSettingsType
+    | RefundSettingsType
+    | PricingSettingsType
+    | BillingSettingsType
+    | SmartChargingSettingsType
+    | AssetSettingsType
+    | SmartChargingContentType
+    | CryptoSettingsType
+    | UserSettingsType
+    | CarConnectorSettingsType
+    | TaskSettingsType;
   ocpi?: OcpiSetting;
   oicp?: OicpSetting;
   // pricing?: PricingSetting;  // TODO - reorg pricing similar to billing
@@ -86,8 +86,7 @@ export interface PricingSettings extends Setting {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface PricingSetting {
-}
+export interface PricingSetting {}
 
 export enum PricingContentType {
   SIMPLE = 'simple',
@@ -167,7 +166,7 @@ export interface OicpBusinessDetails {
 }
 
 export enum AnalyticsSettingsType {
-  SAC = 'sac'
+  SAC = 'sac',
 }
 
 export interface AnalyticsSettings extends Setting {
@@ -183,7 +182,7 @@ export interface SacAnalyticsSetting {
 }
 
 export enum SmartChargingSettingsType {
-  SAP_SMART_CHARGING = 'sapSmartCharging'
+  SAP_SMART_CHARGING = 'sapSmartCharging',
 }
 
 export interface SmartChargingSettings extends Setting {
@@ -193,8 +192,7 @@ export interface SmartChargingSettings extends Setting {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface SmartChargingSetting {
-}
+export interface SmartChargingSetting {}
 
 export enum SmartChargingContentType {
   SAP_SMART_CHARGING = 'sapSmartCharging',
@@ -221,8 +219,7 @@ export interface RefundSettings extends Setting {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RefundSetting {
-}
+export interface RefundSetting {}
 
 export interface ConcurRefundSetting extends RefundSetting {
   authenticationUrl: string;
@@ -237,7 +234,7 @@ export interface ConcurRefundSetting extends RefundSetting {
 }
 
 export enum BillingSettingsType {
-  STRIPE = 'stripe'
+  STRIPE = 'stripe',
 }
 
 export interface BillingSettings extends Setting {
@@ -292,7 +289,7 @@ export interface AssetConnectionSetting {
   greencomConnection?: AssetGreencomConnectionType;
   iothinkConnection?: AssetIothinkConnectionType;
   witConnection?: AssetWitConnectionType;
-  lacroixConnection?: AssetLacroixConnectionType
+  lacroixConnection?: AssetLacroixConnectionType;
 }
 
 export enum AssetConnectionType {
@@ -300,7 +297,7 @@ export enum AssetConnectionType {
   GREENCOM = 'greencom',
   IOTHINK = 'iothink',
   WIT = 'wit',
-  LACROIX = 'lacroix'
+  LACROIX = 'lacroix',
 }
 
 export interface AssetUserPasswordConnectionType {
@@ -355,7 +352,7 @@ export enum CarConnectorConnectionType {
   NONE = '',
   MERCEDES = 'mercedes',
   TRONITY = 'tronity',
-  TARGA_TELEMATICS = 'targaTelematics'
+  TARGA_TELEMATICS = 'targaTelematics',
 }
 
 export interface OAuth2ConnectionType {
@@ -378,16 +375,16 @@ export interface CarConnectorTargaTelematicsConnectionType extends OAuth2Connect
 }
 
 export interface CarConnectorConnectionToken {
-  accessToken: string,
-  expires: Date,
-  tokenType?: string,
-  expiresIn?: number,
-  userName?: string,
-  issued?: Date,
+  accessToken: string;
+  expires: Date;
+  tokenType?: string;
+  expiresIn?: number;
+  userName?: string;
+  issued?: Date;
 }
 
 export enum CryptoSettingsType {
-  CRYPTO = 'crypto'
+  CRYPTO = 'crypto',
 }
 
 export interface CryptoSettings extends Setting {

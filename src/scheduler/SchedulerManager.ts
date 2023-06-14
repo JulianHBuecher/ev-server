@@ -1,4 +1,6 @@
-import SchedulerConfiguration, { SchedulerTaskConfiguration } from '../types/configuration/SchedulerConfiguration';
+import SchedulerConfiguration, {
+  SchedulerTaskConfiguration,
+} from '../types/configuration/SchedulerConfiguration';
 
 import AssetGetConsumptionTask from './tasks/AssetGetConsumptionTask';
 import AsyncTaskCheckTask from './tasks/AsyncTaskCheckTask';
@@ -45,8 +47,9 @@ export default class SchedulerManager {
     await Logging.logInfo({
       tenantID: Constants.DEFAULT_TENANT_ID,
       action: ServerAction.SCHEDULER,
-      module: MODULE_NAME, method: 'init',
-      message: 'The Scheduler is active'
+      module: MODULE_NAME,
+      method: 'init',
+      message: 'The Scheduler is active',
     });
     // Yes: init
     for (const task of SchedulerManager.schedulerConfig.tasks) {
@@ -55,8 +58,9 @@ export default class SchedulerManager {
         await Logging.logWarning({
           tenantID: Constants.DEFAULT_TENANT_ID,
           action: ServerAction.SCHEDULER,
-          module: MODULE_NAME, method: 'init',
-          message: `The task '${task.name}' is inactive`
+          module: MODULE_NAME,
+          method: 'init',
+          message: `The task '${task.name}' is inactive`,
         });
         continue;
       }
@@ -67,8 +71,9 @@ export default class SchedulerManager {
         await Logging.logInfo({
           tenantID: Constants.DEFAULT_TENANT_ID,
           action: ServerAction.SCHEDULER,
-          module: MODULE_NAME, method: 'init',
-          message: `The task '${task.name}' has been scheduled with periodicity ''${task.periodicity}'`
+          module: MODULE_NAME,
+          method: 'init',
+          message: `The task '${task.name}' has been scheduled with periodicity ''${task.periodicity}'`,
         });
       }
     }
@@ -146,8 +151,9 @@ export default class SchedulerManager {
         await Logging.logError({
           tenantID: Constants.DEFAULT_TENANT_ID,
           action: ServerAction.SCHEDULER,
-          module: MODULE_NAME, method: 'createTask',
-          message: `The task '${name}' is unknown`
+          module: MODULE_NAME,
+          method: 'createTask',
+          message: `The task '${name}' is unknown`,
         });
     }
   }

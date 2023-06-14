@@ -85,7 +85,5 @@
       "sanitize": "mongo"
     }
   },
-  "required": [
-    "Limit"
-  ]
+  "required": ["Limit"]
 }

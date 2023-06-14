@@ -19,11 +19,11 @@
     "lastChangedOn": {
       "$ref": "common#/definitions/lastChangedOn"
     },
-    "chargingStationId": {
+    "chargingStationID": {
       "type": "string",
       "sanitize": "mongo"
     },
-    "connectorId": {
+    "connectorID": {
       "type": "number",
       "sanitize": "mongo"
     },
@@ -33,10 +33,10 @@
       "customType": "date",
       "sanitize": "mongo"
     },
-    "tagId": {
+    "idTag": {
       "$ref": "tag#/definitions/id"
     },
-    "parentTagId": {
+    "parentIdTag": {
       "$ref": "tag#/definitions/id"
     },
     "type": {
@@ -44,11 +44,5 @@
       "sanitize": "mongo"
     }
   },
-  "required": [
-    "id",
-    "chargingStationId",
-    "connectorId",
-    "expiryDate",
-    "tagId"
-  ]
+  "required": ["id", "chargingStationID", "connectorID", "expiryDate", "idTag"]
 }
