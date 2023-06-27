@@ -1,6 +1,6 @@
 {
-  "$id": "reservation-update",
-  "title": "Update Reservation",
+  "$id": "reservation-template-save",
+  "title": "Validate the Reservation's template",
   "type": "object",
   "properties": {
     "id": {
@@ -27,17 +27,11 @@
     "idTag": {
       "$ref": "reservation#/definitions/idTag"
     },
-    "visualTagID": {
-      "$ref": "tag#/definitions/visualID"
-    },
-    "parentIdTag": {
-      "$ref": "reservation#/definitions/parentIdTag"
-    },
     "carID": {
       "$ref": "reservation#/definitions/carID"
     },
-    "userID": {
-      "$ref": "reservation#/definitions/userID"
+    "parentIdTag": {
+      "$ref": "reservation#/definitions/parentIdTag"
     },
     "type": {
       "$ref": "reservation#/definitions/type"

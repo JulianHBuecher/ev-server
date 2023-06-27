@@ -1,14 +1,15 @@
 import fs from 'fs';
+
 import global from '../../types/GlobalType';
-import { ReservationTemplate } from '../../types/Reservation';
+import Reservation from '../../types/Reservation';
 import Schema from '../../types/validator/Schema';
 import SchemaValidator from '../../validator/SchemaValidator';
 
 export default class ReservationValidatorStorage extends SchemaValidator {
   private static instance: ReservationValidatorStorage | null = null;
-  private reservationTemplateSave: Schema = JSON.parse(
+  private reservationSave: Schema = JSON.parse(
     fs.readFileSync(
-      `${global.appRoot}/assets/schemas/reservation/reservation-template-save.json`,
+      `${global.appRoot}/assets/storage/schemas/reservation/reservation-save.json`,
       'utf-8'
     )
   );
@@ -24,7 +25,7 @@ export default class ReservationValidatorStorage extends SchemaValidator {
     return ReservationValidatorStorage.instance;
   }
 
-  public validateReservationTemplateSave(data: any): ReservationTemplate {
-    return this.validate(this.reservationTemplateSave, data);
+  public validateReservation(data: any): Reservation {
+    return this.validate(this.reservationSave, data, true);
   }
 }

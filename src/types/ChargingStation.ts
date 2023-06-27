@@ -3,6 +3,10 @@ import {
   ChargingStationAuthorizationActions,
   ConnectorAuthorizationActions,
 } from './Authorization';
+import { ChargingRateUnitType } from './ChargingProfile';
+import CreatedUpdatedProps from './CreatedUpdatedProps';
+import { KeyValue } from './GlobalType';
+import { OCPIEvse } from './ocpi/OCPIEvse';
 import {
   ChargePointStatus,
   OCPPFirmwareStatus,
@@ -10,18 +14,12 @@ import {
   OCPPProtocol,
   OCPPVersion,
 } from './ocpp/OCPPServer';
-
-import { ChargingRateUnitType } from './ChargingProfile';
-import CreatedUpdatedProps from './CreatedUpdatedProps';
-import { InactivityStatus } from './Transaction';
-import { KeyValue } from './GlobalType';
-import { OCPIEvse } from './ocpi/OCPIEvse';
 import { OICPEvseDataRecord } from './oicp/OICPEvse';
 import { OICPIdentification } from './oicp/OICPIdentification';
 import Site from './Site';
 import SiteArea from './SiteArea';
+import { InactivityStatus } from './Transaction';
 import User from './User';
-import Reservation from './Reservation';
 
 export default interface ChargingStation
   extends CreatedUpdatedProps,

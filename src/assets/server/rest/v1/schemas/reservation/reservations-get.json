@@ -1,11 +1,38 @@
 {
   "$id": "reservations-get",
-  "title": "Get Reservations",
+  "title": "Get List of Reservations",
   "description": "",
   "type": "object",
   "properties": {
     "Search": {
       "$ref": "common#/definitions/search"
+    },
+    "ReservationID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "ChargingStationID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "ConnectorID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "UserID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "CarID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "StartDateTime": {
+      "$ref": "reservation#/definitions/fromDate"
+    },
+    "EndDateTime": {
+      "$ref": "reservation#/definitions/toDate"
+    },
+    "Status": {
+      "$ref": "reservation#/definitions/status"
+    },
+    "Type": {
+      "$ref": "reservation#/definitions/type"
     },
     "WithUser": {
       "type": "boolean",

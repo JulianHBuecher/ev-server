@@ -1,10 +1,11 @@
+import { IDictionary, IFunctionCondition } from 'role-acl';
+
 import {
   Action,
   AuthorizationContext,
   AuthorizationDefinition,
   Entity,
 } from '../types/Authorization';
-import { IDictionary, IFunctionCondition } from 'role-acl';
 
 export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
   superAdmin: {
@@ -354,10 +355,6 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       {
         resource: Entity.STATISTIC,
         action: Action.EXPORT,
-      },
-      {
-        resource: Entity.RESERVATION,
-        action: [Action.CREATE, Action.UPDATE, Action.READ, Action.LIST, Action.DELETE],
       },
     ],
   },
@@ -953,6 +950,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'siteArea.id',
           'siteArea.name',
           'siteArea.siteID',
+          'siteArea.image',
           'site.name',
           'siteArea.address',
           'siteID',
@@ -974,6 +972,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
           'connectors.currentTagID',
+          'connectors.reservation',
           'lastReboot',
           'createdOn',
           'connectors.user.id',
@@ -2316,9 +2315,26 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       { resource: Entity.PAYMENT_METHOD, action: Action.LIST },
       { resource: Entity.PAYMENT_METHOD, action: [Action.READ, Action.CREATE, Action.DELETE] },
       { resource: Entity.SOURCE, action: Action.LIST },
+      { resource: Entity.RESERVATION, action: Action.READ },
       {
         resource: Entity.RESERVATION,
-        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.LIST],
+        action: Action.LIST,
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: [],
+            metadata: {
+              userID: {
+                mandatory: true,
+              },
+            },
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: [Action.CREATE, Action.UPDATE, Action.DELETE, Action.EXPORT],
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
@@ -2326,7 +2342,75 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
             filters: [],
           },
         },
-        attributes: ['*'],
+        // TODO: Add additional properties
+        attributes: [
+          'id',
+          'chargingStationID',
+          'chargingStation.chargePointModel',
+          'chargingStation.chargePointVendor',
+          'chargingStation.companyID',
+          'chargingStation.company.id',
+          'chargingStation.company.name',
+          'chargingStation.company.address.address1',
+          'chargingStation.company.address.postalCode',
+          'chargingStation.company.address.city',
+          'chargingStation.company.address.department',
+          'chargingStation.company.address.region',
+          'chargingStation.company.address.country',
+          'chargingStation.connectors.connectorId',
+          'chargingStation.connectors.currentTagID',
+          'chargingStation.connectors.currentTransactionID',
+          'chargingStation.connectors.currentUserID',
+          'chargingStation.connectors.status',
+          'chargingStation.connectors.errorCode',
+          'chargingStation.connectors.info',
+          'chargingStation.connectors.power',
+          'chargingStation.connectors.type',
+          'chargingStation.siteAreaID',
+          'chargingStation.siteArea.ownerName',
+          'chargingStation.siteArea.id',
+          'chargingStation.siteArea.smartCharging',
+          'chargingStation.siteArea.parentSiteArea',
+          'chargingStation.siteArea.name',
+          'chargingStation.siteArea.address.address1',
+          'chargingStation.siteArea.address.postalCode',
+          'chargingStation.siteArea.address.city',
+          'chargingStation.siteArea.address.department',
+          'chargingStation.siteArea.address.region',
+          'chargingStation.siteArea.address.country',
+          'chargingStation.siteID',
+          'chargingStation.site.id',
+          'chargingStation.site.ownerName',
+          'chargingStation.site.name',
+          'chargingStation.site.address.address1',
+          'chargingStation.site.address.postalCode',
+          'chargingStation.site.address.city',
+          'chargingStation.site.address.department',
+          'chargingStation.site.address.region',
+          'chargingStation.site.address.country',
+          'connectorID',
+          'fromDate',
+          'toDate',
+          'arrivalTime',
+          'idTag',
+          'tag.id',
+          'tag.active',
+          'tag.visualID',
+          'tag.description',
+          'tag.userID',
+          'tag.user.id',
+          'tag.user.name',
+          'tag.user.firstName',
+          'tag.user.plateID',
+          'parentIdTag',
+          'carID',
+          'type',
+          'status',
+          'createdBy.name',
+          'createdBy.firstName',
+          'lastChangedBy.name',
+          'lastChangedBy.firstName',
+        ],
       },
     ],
   },
@@ -2910,6 +2994,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.vendorErrorCode',
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
+          'connectors.reservation',
           'lastReboot',
           'createdOn',
           'companyID',
@@ -3686,12 +3771,34 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       { resource: Entity.NOTIFICATION, action: Action.CREATE },
       {
         resource: Entity.RESERVATION,
-        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE],
+        action: Action.READ,
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
             asserts: [],
-            filters: [],
+            filters: ['OwnUser'],
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: Action.LIST,
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['OwnUser'],
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: [Action.CREATE, Action.UPDATE, Action.CANCEL_RESERVATION],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['OwnUser'],
           },
         },
         attributes: ['*'],
@@ -4085,6 +4192,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.vendorErrorCode',
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
+          'connectors.reservation',
           'lastReboot',
           'createdOn',
           'companyID',
@@ -4636,12 +4744,34 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       },
       {
         resource: Entity.RESERVATION,
-        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.LIST],
+        action: Action.READ,
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
             asserts: [],
-            filters: [],
+            filters: ['OwnUser'],
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: Action.LIST,
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['OwnUser'],
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: [Action.CREATE, Action.UPDATE, Action.CANCEL_RESERVATION],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['OwnUser'],
           },
         },
         attributes: ['*'],
@@ -6484,15 +6614,41 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       { resource: Entity.SOURCE, action: Action.LIST },
       {
         resource: Entity.RESERVATION,
-        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.LIST],
+        action: Action.READ,
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
             asserts: [],
-            filters: [],
+            filters: ['SitesAdmin'],
           },
         },
-        attributes: ['*'],
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: Action.LIST,
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['SitesAdmin'],
+            metadata: {
+              userID: {
+                mandatory: true,
+              },
+            },
+          },
+        },
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: [Action.CREATE, Action.UPDATE, Action.CANCEL_RESERVATION],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['SitesAdmin'],
+          },
+        },
       },
     ],
   },
@@ -7308,15 +7464,30 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       },
       {
         resource: Entity.RESERVATION,
-        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.LIST],
+        action: [Action.LIST],
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
             asserts: [],
-            filters: [],
+            filters: ['SiteOwner'],
+            metadata: {
+              userID: {
+                mandatory: true,
+              },
+            },
           },
         },
-        attributes: ['*'],
+      },
+      {
+        resource: Entity.RESERVATION,
+        action: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['SiteOwner'],
+          },
+        },
       },
     ],
   },

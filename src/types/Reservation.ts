@@ -1,8 +1,8 @@
-import { AuthorizationActions } from './Authorization';
+import { ReservationAuthorizationActions } from './Authorization';
 import CreatedUpdatedProps from './CreatedUpdatedProps';
-import { OCPPReservationStatus } from './ocpp/OCPPClient';
+import { ImportStatus } from './GlobalType';
 
-export default interface Reservation extends CreatedUpdatedProps, AuthorizationActions {
+export default interface Reservation extends CreatedUpdatedProps, ReservationAuthorizationActions {
   id: number;
   chargingStationID: string;
   connectorID: number;
@@ -12,26 +12,42 @@ export default interface Reservation extends CreatedUpdatedProps, AuthorizationA
   arrivalTime?: Date;
   idTag: string;
   parentIdTag?: string;
-  userID?: string;
   carID?: string;
-  siteID?: string;
-  siteAreaID?: string;
-  companyID?: string;
   type: ReservationType;
-  status: OCPPReservationStatus;
+  status: ReservationStatus;
 }
 
-export interface ReservationTemplate extends CreatedUpdatedProps, AuthorizationActions {
+export interface ImportedReservation {
   id: number;
   chargingStationID: string;
   connectorID: number;
+  importedBy?: string;
+  importedOn?: Date;
+  status?: ImportStatus;
+  errorDescription?: string;
+  fromDate: Date;
+  toDate: Date;
   expiryDate: Date;
+  arrivalTime?: Date;
   idTag: string;
   parentIdTag?: string;
-  type: string;
+  carID?: string;
+  type: ReservationType;
+  importedData?: {
+    autoActivateReservationAtImport: boolean;
+  };
+}
+
+export enum ReservationStatus {
+  DONE = 'reservation_done',
+  SCHEDULED = 'reservation_scheduled',
+  IN_PROGRESS = 'reservation_in_progress',
+  CANCELLED = 'reservation_cancelled',
+  INACTIVE = 'reservation_inactive',
+  EXPIRED = 'reservation_expired',
 }
 
 export enum ReservationType {
-  PLANNED = 'planned_reservation',
-  NOW = 'reserve_now',
+  PLANNED_RESERVATION = 'planned_reservation',
+  RESERVE_NOW = 'reserve_now',
 }

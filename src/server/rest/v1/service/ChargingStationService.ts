@@ -62,6 +62,7 @@ import {
   HttpChargingStationTransactionStopRequest,
   HttpChargingStationsGetRequest,
 } from '../../../../types/requests/HttpChargingStationRequest';
+import { ReservationStatus, ReservationType } from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import SiteArea from '../../../../types/SiteArea';
 import Tag from '../../../../types/Tag';
@@ -81,7 +82,6 @@ import OICPUtils from '../../../oicp/OICPUtils';
 import ChargingStationValidatorRest from '../validator/ChargingStationValidatorRest';
 import AuthorizationService from './AuthorizationService';
 import UtilsService from './UtilsService';
-import { ReservationType } from '../../../../types/Reservation';
 
 const MODULE_NAME = 'ChargingStationService';
 
@@ -1058,13 +1058,29 @@ export default class ChargingStationService {
       id: filteredRequest.args.reservationId,
       chargingStationID: chargingStation.id,
       connectorID: filteredRequest.args.connectorId,
+      fromDate: new Date(),
+      toDate: filteredRequest.args.expiryDate,
       expiryDate: filteredRequest.args.expiryDate,
       idTag: filteredRequest.args.idTag,
       parentIdTag: filteredRequest.args.parentIdTag,
-      status: OCPPReservationStatus.ACCEPTED,
-      type: ReservationType.NOW,
+      status: ReservationStatus.IN_PROGRESS,
+      type: ReservationType.RESERVE_NOW,
+      createdBy: { id: req.user.id },
+      createdOn: new Date(),
     });
-    res.json(await chargingStationClient.reserveNow(filteredRequest.args));
+    const response = await chargingStationClient.reserveNow(filteredRequest.args);
+    if (response.status !== OCPPReservationStatus.ACCEPTED) {
+      throw new AppError({
+        ...LoggingHelper.getChargingStationProperties(chargingStation),
+        action,
+        user: req.user,
+        errorCode: HTTPError.RESERVATION_REJECTED_ERROR,
+        module: MODULE_NAME,
+        method: this.handleReserveNow.name,
+        message: `Reservation was rejected from charging station '${chargingStation.id}'`,
+      });
+    }
+    res.json(Constants.REST_RESPONSE_SUCCESS);
     next();
   }
 
@@ -1105,10 +1121,19 @@ export default class ChargingStationService {
       });
     }
     const result = await chargingStationClient.cancelReservation(filteredRequest.args);
-    if (result.status === OCPPCancelReservationStatus.ACCEPTED) {
-      await ReservationStorage.deleteReservation(req.tenant, filteredRequest.args.reservationId);
+    if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
+      throw new AppError({
+        ...LoggingHelper.getChargingStationProperties(chargingStation),
+        action,
+        user: req.user,
+        errorCode: HTTPError.RESERVATION_REJECTED_ERROR,
+        module: MODULE_NAME,
+        method: this.handleCancelReservation.name,
+        message: `Cancel reservation was rejected from charging station '${chargingStation.id}'`,
+      });
     }
-    res.json(result);
+    await ReservationStorage.cancelReservation(req.tenant, filteredRequest.args.reservationId);
+    res.json(Constants.REST_RESPONSE_SUCCESS);
     next();
   }
 

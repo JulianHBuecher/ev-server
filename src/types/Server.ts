@@ -502,6 +502,11 @@ export enum ServerAction {
   RESERVATION_CREATE = 'ReservationCreate',
   RESERVATION_UPDATE = 'ReservationUpdate',
   RESERVATION_DELETE = 'ReservationDelete',
+  RESERVATIONS_EXPORT = 'ReservationsExport',
+  RESERVATIONS_IMPORT = 'ReservationsImport',
+  RESERVATION_CANCEL = 'ReservationCancel',
+  RESERVATIONS_EXPIRE = 'ReservationsExpire',
+  SYNCHRONIZE_RESERVATIONS = 'SynchronizeReservations',
 }
 
 // RESTful API
@@ -745,6 +750,8 @@ export enum RESTServerRoute {
   // RESERVATION URLs for CRUD operations
   REST_RESERVATIONS = 'reservations',
   REST_RESERVATION = 'reservations/:id',
+  REST_RESERVATIONS_EXPORT = 'reservations/action/export',
+  REST_RESERVATIONS_IMPORT = 'reservations/action/import',
 }
 
 export enum OCPIServerRoute {

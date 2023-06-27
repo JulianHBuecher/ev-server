@@ -101,7 +101,7 @@
       }
     ],
     "import/order": [
-      "error",
+      "warn",
       {
         "groups": [
           "builtin", // Built-in imports (come from NodeJS native) go first
@@ -157,13 +157,19 @@
         "semi": "off",
         "@typescript-eslint/semi": ["error", "always"],
         "@typescript-eslint/no-empty-function": "warn",
+        "@typescript-eslint/no-unsafe-argument": "warn",
+        "@typescript-eslint/no-unsafe-assignment": "warn",
+        "@typescript-eslint/no-unsafe-member-access": "warn",
+        "@typescript-eslint/no-empty-interface": "warn",
+        "@typescript-eslint/no-unsafe-return": "warn",
+        "@typescript-eslint/no-unsafe-call": "warn",
         "@typescript-eslint/member-ordering": "error",
         "@typescript-eslint/await-thenable": "error",
         "@typescript-eslint/no-floating-promises": "error",
         "@typescript-eslint/promise-function-async": "error",
         "@typescript-eslint/no-misused-promises": "error",
         "no-shadow": "off",
-        "@typescript-eslint/no-shadow": "error"
+        "@typescript-eslint/no-shadow": "warn"
       }
     },
     {

@@ -1,3 +1,9 @@
+import _ from 'lodash';
+
+import Authorizations from '../../../../authorization/Authorizations';
+import DynamicAuthorizationFactory from '../../../../authorization/DynamicAuthorizationFactory';
+import AppAuthError from '../../../../exception/AppAuthError';
+import Asset from '../../../../types/Asset';
 import {
   Action,
   AuthorizationActions,
@@ -6,6 +12,17 @@ import {
   DynamicAuthorizationsFilter,
   Entity,
 } from '../../../../types/Authorization';
+import {
+  BillingAccount,
+  BillingInvoice,
+  BillingPaymentMethod,
+  BillingTax,
+  BillingTransfer,
+} from '../../../../types/Billing';
+import { Car, CarCatalog } from '../../../../types/Car';
+import { ChargingProfile } from '../../../../types/ChargingProfile';
+import ChargingStation, { ChargingStationTemplate } from '../../../../types/ChargingStation';
+import Company from '../../../../types/Company';
 import {
   AssetDataResult,
   BillingAccountsDataResult,
@@ -35,16 +52,10 @@ import {
   UserDataResult,
   UserSiteDataResult,
 } from '../../../../types/DataResult';
-import {
-  BillingAccount,
-  BillingInvoice,
-  BillingPaymentMethod,
-  BillingTax,
-  BillingTransfer,
-} from '../../../../types/Billing';
-import { Car, CarCatalog } from '../../../../types/Car';
+import { EntityData } from '../../../../types/GlobalType';
+import { HTTPAuthError } from '../../../../types/HTTPError';
 import { ChargePointStatus, OCPPProtocol, OCPPVersion } from '../../../../types/ocpp/OCPPServer';
-import ChargingStation, { ChargingStationTemplate } from '../../../../types/ChargingStation';
+import RefundReport, { RefundStatus } from '../../../../types/Refund';
 import {
   HttpAssetGetRequest,
   HttpAssetsGetRequest,
@@ -60,6 +71,7 @@ import {
   HttpPaymentMethods,
   HttpSetupPaymentMethod,
 } from '../../../../types/requests/HttpBillingRequest';
+import HttpByIDRequest from '../../../../types/requests/HttpByIDRequest';
 import {
   HttpCarCatalogGetRequest,
   HttpCarCatalogsGetRequest,
@@ -108,26 +120,12 @@ import {
   HttpUserSitesGetRequest,
   HttpUsersGetRequest,
 } from '../../../../types/requests/HttpUserRequest';
-import RefundReport, { RefundStatus } from '../../../../types/Refund';
 
-import AppAuthError from '../../../../exception/AppAuthError';
-import Asset from '../../../../types/Asset';
-import Authorizations from '../../../../authorization/Authorizations';
-import { ChargingProfile } from '../../../../types/ChargingProfile';
-import Company from '../../../../types/Company';
-import DynamicAuthorizationFactory from '../../../../authorization/DynamicAuthorizationFactory';
-import { EntityData } from '../../../../types/GlobalType';
-import { HTTPAuthError } from '../../../../types/HTTPError';
-import HttpByIDRequest from '../../../../types/requests/HttpByIDRequest';
-import { HttpLogGetRequest } from '../../../../types/requests/HttpLogRequest';
-import { HttpOCPIEndpointGetRequest } from '../../../../types/requests/HttpOCPIEndpointRequest';
-import { HttpRegistrationTokenGetRequest } from '../../../../types/requests/HttpRegistrationToken';
-import HttpStatisticsGetRequest from '../../../../types/requests/HttpStatisticRequest';
+import { TransactionInError } from '../../../../types/InError';
 import { Log } from '../../../../types/Log';
-import { OCPICapability } from '../../../../types/ocpi/OCPIEvse';
-import OCPIEndpoint from '../../../../types/ocpi/OCPIEndpoint';
 import PricingDefinition from '../../../../types/Pricing';
 import RegistrationToken from '../../../../types/RegistrationToken';
+import Reservation from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import { Setting } from '../../../../types/Setting';
 import Site from '../../../../types/Site';
@@ -135,13 +133,16 @@ import SiteArea from '../../../../types/SiteArea';
 import Tag from '../../../../types/Tag';
 import Tenant from '../../../../types/Tenant';
 import Transaction from '../../../../types/Transaction';
-import { TransactionInError } from '../../../../types/InError';
 import User from '../../../../types/User';
 import UserToken from '../../../../types/UserToken';
-import Utils from '../../../../utils/Utils';
-import _ from 'lodash';
+import OCPIEndpoint from '../../../../types/ocpi/OCPIEndpoint';
+import { OCPICapability } from '../../../../types/ocpi/OCPIEvse';
+import { HttpLogGetRequest } from '../../../../types/requests/HttpLogRequest';
+import { HttpOCPIEndpointGetRequest } from '../../../../types/requests/HttpOCPIEndpointRequest';
+import { HttpRegistrationTokenGetRequest } from '../../../../types/requests/HttpRegistrationToken';
 import { HttpReservationGetRequest } from '../../../../types/requests/HttpReservationRequest';
-import Reservation from '../../../../types/Reservation';
+import HttpStatisticsGetRequest from '../../../../types/requests/HttpStatisticRequest';
+import Utils from '../../../../utils/Utils';
 
 const MODULE_NAME = 'AuthorizationService';
 
@@ -3951,13 +3952,6 @@ export default class AuthorizationService {
       Action.CREATE,
       authorizationFilter
     );
-    reservations.canDelete = await AuthorizationService.canPerformAuthorizationAction(
-      tenant,
-      userToken,
-      Entity.RESERVATION,
-      Action.DELETE,
-      authorizationFilter
-    );
     reservations.canExport = await AuthorizationService.canPerformAuthorizationAction(
       tenant,
       userToken,
@@ -4024,15 +4018,6 @@ export default class AuthorizationService {
     authorizationFilter: AuthorizationFilter
   ): Promise<void> {
     reservation.canRead = true; // Always true as it should be filtered upfront
-    reservation.canDelete = await AuthorizationService.canPerformAuthorizationAction(
-      tenant,
-      userToken,
-      Entity.RESERVATION,
-      Action.DELETE,
-      authorizationFilter,
-      { ReservationID: reservation.id },
-      reservation
-    );
     reservation.canUpdate = await AuthorizationService.canPerformAuthorizationAction(
       tenant,
       userToken,
@@ -4042,10 +4027,54 @@ export default class AuthorizationService {
       { ReservationID: reservation.id },
       reservation
     );
+    reservation.canDelete = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.RESERVATION,
+      Action.DELETE,
+      authorizationFilter,
+      { ReservationID: reservation.id },
+      reservation
+    );
     reservation.canListUsers = await AuthorizationService.canPerformAuthorizationAction(
       tenant,
       userToken,
       Entity.USER,
+      Action.LIST,
+      authorizationFilter
+    );
+    reservation.canListChargingStations = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.CHARGING_STATION,
+      Action.LIST,
+      authorizationFilter
+    );
+    reservation.canListCompanies = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.COMPANY,
+      Action.LIST,
+      authorizationFilter
+    );
+    reservation.canListSiteAreas = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.SITE_AREA,
+      Action.LIST,
+      authorizationFilter
+    );
+    reservation.canListSites = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.SITE,
+      Action.LIST,
+      authorizationFilter
+    );
+    reservation.canListTags = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.TAG,
       Action.LIST,
       authorizationFilter
     );

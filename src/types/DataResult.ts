@@ -1,3 +1,5 @@
+import Asset from './Asset';
+import { AuthorizationDefinitionFieldMetadata } from './Authorization';
 import {
   BillingAccount,
   BillingInvoice,
@@ -6,24 +8,21 @@ import {
   BillingTransfer,
 } from './Billing';
 import { Car, CarCatalog } from './Car';
-import ChargingStation, { ChargingStationTemplate } from './ChargingStation';
-import { ChargingStationInError, TransactionInError } from './InError';
-import Site, { UserSite } from './Site';
-import Transaction, { TransactionStats } from './Transaction';
-import User, { SiteUser } from './User';
-
-import Asset from './Asset';
-import { AuthorizationDefinitionFieldMetadata } from './Authorization';
 import { ChargingProfile } from './ChargingProfile';
+import ChargingStation, { ChargingStationTemplate } from './ChargingStation';
 import Company from './Company';
+import { ChargingStationInError, TransactionInError } from './InError';
 import { Log } from './Log';
 import OCPIEndpoint from './ocpi/OCPIEndpoint';
 import PricingDefinition from './Pricing';
 import RegistrationToken from './RegistrationToken';
+import Reservation from './Reservation';
 import { SettingDB } from './Setting';
+import Site, { UserSite } from './Site';
 import SiteArea from './SiteArea';
 import Tag from './Tag';
-import Reservation from './Reservation';
+import Transaction, { TransactionStats } from './Transaction';
+import User, { SiteUser } from './User';
 
 export interface DeletedResult {
   acknowledged?: boolean;
@@ -209,8 +208,6 @@ export interface StatisticDataResult extends DataResult<any> {
 
 export interface ReservationDataResult extends DataResult<Reservation> {
   canCreate?: boolean;
-  canUpdate?: boolean;
-  canDelete?: boolean;
   canExport?: boolean;
   canListUsers?: boolean;
   canListSites?: boolean;

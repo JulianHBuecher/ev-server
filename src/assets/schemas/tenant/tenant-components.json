@@ -148,6 +148,15 @@
               "sanitize": "mongo"
             }
           }
+        },
+        "reservation": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "boolean",
+              "sanitize": "mongo"
+            }
+          }
         }
       }
     }

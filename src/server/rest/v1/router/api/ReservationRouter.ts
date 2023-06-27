@@ -1,8 +1,8 @@
-import { RESTServerRoute, ServerAction } from '../../../../../types/Server';
 import express, { NextFunction, Request, Response } from 'express';
 
-import ReservationService from '../../service/ReservationService';
+import { RESTServerRoute, ServerAction } from '../../../../../types/Server';
 import RouterUtils from '../../../../../utils/RouterUtils';
+import ReservationService from '../../service/ReservationService';
 
 export default class ReservationRouter {
   private router: express.Router;
@@ -17,6 +17,8 @@ export default class ReservationRouter {
     this.buildRouteReservationCreate();
     this.buildRouteReservationUpdate();
     this.buildRouteReservationDelete();
+    this.buildRouteReservationsExport();
+    // this.buildRouteReservationsImport();
     return this.router;
   }
 
@@ -97,4 +99,34 @@ export default class ReservationRouter {
       }
     );
   }
+
+  private buildRouteReservationsExport(): void {
+    this.router.get(
+      `/${RESTServerRoute.REST_RESERVATIONS_EXPORT}`,
+      (req: Request, res: Response, next: NextFunction) => {
+        void RouterUtils.handleRestServerAction(
+          ReservationService.handleExportReservations.bind(this),
+          ServerAction.RESERVATIONS_EXPORT,
+          req,
+          res,
+          next
+        );
+      }
+    );
+  }
+
+  // private buildRouteReservationsImport(): void {
+  //   this.router.post(
+  //     `/${RESTServerRoute.REST_RESERVATIONS_IMPORT}`,
+  //     (req: Request, res: Response, next: NextFunction) => {
+  //       void RouterUtils.handleRestServerAction(
+  //         ReservationService.handleImportReservations.bind(this),
+  //         ServerAction.RESERVATIONS_IMPORT,
+  //         req,
+  //         res,
+  //         next
+  //       );
+  //     }
+  //   );
+  // }
 }

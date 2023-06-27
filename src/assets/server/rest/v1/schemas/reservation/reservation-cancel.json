@@ -7,7 +7,7 @@
       "$ref": "reservation#/definitions/chargingStationId"
     },
     "ID": {
-      "$ref": "reservation#/definitions/ID"
+      "$ref": "reservation#/definitions/id"
     }
   },
   "required": ["ID"]

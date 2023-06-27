@@ -1,3 +1,4 @@
+import { ChargingRateUnitType } from '../ChargingProfile';
 import {
   ChargePoint,
   ConnectorType,
@@ -6,8 +7,6 @@ import {
   Voltage,
 } from '../ChargingStation';
 import { OCPPAvailabilityType, OCPPResetType } from '../ocpp/OCPPClient';
-
-import { ChargingRateUnitType } from '../ChargingProfile';
 import HttpByIDRequest from './HttpByIDRequest';
 import HttpDatabaseRequest from './HttpDatabaseRequest';
 
@@ -176,6 +175,7 @@ export interface HttpChargingStationTransactionStartRequest
     connectorId: number;
     tagID?: string;
     visualTagID?: string;
+    reservationId?: number;
   };
 }
 

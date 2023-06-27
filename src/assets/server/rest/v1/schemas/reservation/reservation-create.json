@@ -3,8 +3,8 @@
   "title": "Create Reservation",
   "type": "object",
   "properties": {
-    "ID": {
-      "$ref": "reservation#/definitions/ID"
+    "id": {
+      "$ref": "reservation#/definitions/id"
     },
     "chargingStationID": {
       "$ref": "reservation#/definitions/chargingStationId"
@@ -24,6 +24,9 @@
     "idTag": {
       "$ref": "reservation#/definitions/idTag"
     },
+    "visualTagID": {
+      "$ref": "tag#/definitions/visualID"
+    },
     "parentIdTag": {
       "$ref": "reservation#/definitions/parentIdTag"
     },
@@ -33,21 +36,9 @@
     "carID": {
       "$ref": "reservation#/definitions/carID"
     },
-    "siteID": {
-      "$ref": "reservation#/definitions/siteID"
-    },
-    "siteAreaID": {
-      "$ref": "reservation#/definitions/siteAreaID"
-    },
-    "companyID": {
-      "$ref": "reservation#/definitions/companyID"
-    },
     "type": {
       "$ref": "reservation#/definitions/type"
-    },
-    "status": {
-      "$ref": "reservation#/definitions/status"
     }
   },
-  "required": ["ID", "chargingStationID", "connectorID", "expiryDate", "idTag"]
+  "required": ["id", "chargingStationID", "connectorID", "idTag"]
 }

@@ -1,7 +1,12 @@
+import cron from 'node-cron';
+
 import SchedulerConfiguration, {
   SchedulerTaskConfiguration,
 } from '../types/configuration/SchedulerConfiguration';
-
+import { ServerAction } from '../types/Server';
+import Constants from '../utils/Constants';
+import Logging from '../utils/Logging';
+import SchedulerTask from './SchedulerTask';
 import AssetGetConsumptionTask from './tasks/AssetGetConsumptionTask';
 import AsyncTaskCheckTask from './tasks/AsyncTaskCheckTask';
 import BillingPeriodicOperationTask from './tasks/BillingPeriodicOperationTask';
@@ -12,9 +17,7 @@ import CheckPreparingSessionNotStartedTask from './tasks/CheckPreparingSessionNo
 import CheckSessionNotStartedAfterAuthorizeTask from './tasks/CheckSessionNotStartedAfterAuthorizeTask';
 import CheckUserAccountInactivityTask from './tasks/CheckUserAccountInactivityTask';
 import CloseTransactionsInProgressTask from './tasks/CloseTransactionsInProgressTask';
-import Constants from '../utils/Constants';
 import DispatchCollectedFundsTask from './tasks/DispatchCollectedFundsTask';
-import Logging from '../utils/Logging';
 import LoggingDatabaseTableCleanupTask from './tasks/LoggingDatabaseTableCleanupTask';
 import MigrateSensitiveDataTask from './tasks/MigrateSensitiveDataTask';
 import OCPICheckCdrsTask from './tasks/ocpi/OCPICheckCdrsTask';
@@ -29,11 +32,10 @@ import OCPIPushEVSEStatusesTask from './tasks/ocpi/OCPIPushEVSEStatusesTask';
 import OCPIPushTokensTask from './tasks/ocpi/OCPIPushTokensTask';
 import OICPPushEvseDataTask from './tasks/oicp/OICPPushEvseDataTask';
 import OICPPushEvseStatusTask from './tasks/oicp/OICPPushEvseStatusTask';
-import SchedulerTask from './SchedulerTask';
-import { ServerAction } from '../types/Server';
+import CheckReservationStatusTask from './tasks/reservations/CheckReservationStatusTask';
+import SynchronizeReservationsTask from './tasks/reservations/ScheduleReservationsTask';
 import SynchronizeCarsTask from './tasks/SynchronizeCarsTask';
 import SynchronizeRefundTransactionsTask from './tasks/SynchronizeRefundTransactionsTask';
-import cron from 'node-cron';
 
 const MODULE_NAME = 'SchedulerManager';
 
@@ -147,6 +149,10 @@ export default class SchedulerManager {
         return new CloseTransactionsInProgressTask();
       case 'DispatchCollectedFundsTask':
         return new DispatchCollectedFundsTask();
+      case 'CheckReservationStatusTask':
+        return new CheckReservationStatusTask();
+      case 'SynchronizeReservationsTask':
+        return new SynchronizeReservationsTask();
       default:
         await Logging.logError({
           tenantID: Constants.DEFAULT_TENANT_ID,

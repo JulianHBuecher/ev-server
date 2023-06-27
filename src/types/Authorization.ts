@@ -387,6 +387,15 @@ export interface OcpiEndpointAuthorizationActions extends AuthorizationActions {
   canTriggerJob?: boolean;
 }
 
+export interface ReservationAuthorizationActions extends AuthorizationActions {
+  canCancelReservation?: boolean;
+  canListSites?: boolean;
+  canListSiteAreas?: boolean;
+  canListTags?: boolean;
+  canListChargingStations?: boolean;
+  canListCompanies?: boolean;
+}
+
 export enum DynamicAuthorizationFilterName {
   ASSIGNED_SITES_COMPANIES = 'AssignedSitesCompanies',
   SITES_ADMIN = 'SitesAdmin',

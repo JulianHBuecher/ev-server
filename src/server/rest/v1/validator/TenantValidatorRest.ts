@@ -1,17 +1,17 @@
+import fs from 'fs';
+
+import AppError from '../../../../exception/AppError';
+import global from '../../../../types/GlobalType';
+import { HTTPError } from '../../../../types/HTTPError';
 import {
   HttpTenantDeleteRequest,
   HttpTenantGetRequest,
   HttpTenantLogoGetRequest,
   HttpTenantsGetRequest,
 } from '../../../../types/requests/HttpTenantRequest';
-
-import AppError from '../../../../exception/AppError';
-import { HTTPError } from '../../../../types/HTTPError';
+import Tenant from '../../../../types/Tenant';
 import Schema from '../../../../types/validator/Schema';
 import SchemaValidator from '../../../../validator/SchemaValidator';
-import Tenant from '../../../../types/Tenant';
-import fs from 'fs';
-import global from '../../../../types/GlobalType';
 
 export default class TenantValidatorRest extends SchemaValidator {
   private static instance: TenantValidatorRest | null = null;
@@ -21,36 +21,42 @@ export default class TenantValidatorRest extends SchemaValidator {
       'utf8'
     )
   );
+
   private tenantUpdate: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenant-update.json`,
       'utf8'
     )
   );
+
   private tenantUpdateData: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenant-data-update.json`,
       'utf8'
     )
   );
+
   private tenantLogoGet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenant-logo-get.json`,
       'utf8'
     )
   );
+
   private tenantGet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenant-get.json`,
       'utf8'
     )
   );
+
   private tenantDelete: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenant-delete.json`,
       'utf8'
     )
   );
+
   private tenantsGet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/tenant/tenants-get.json`,
@@ -185,6 +191,19 @@ export default class TenantValidatorRest extends SchemaValidator {
         throw new AppError({
           errorCode: HTTPError.GENERAL_ERROR,
           message: 'Pricing must be active to use the Refund component',
+          module: this.moduleName,
+          method: 'validateComponentDependencies',
+        });
+      }
+      if (
+        tenant.components.organization &&
+        tenant.components.reservation &&
+        !tenant.components.organization.active &&
+        tenant.components.reservation.active
+      ) {
+        throw new AppError({
+          errorCode: HTTPError.GENERAL_ERROR,
+          message: 'Organisation must be active to use the Reservation component',
           module: this.moduleName,
           method: 'validateComponentDependencies',
         });

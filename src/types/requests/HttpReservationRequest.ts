@@ -1,5 +1,4 @@
-import { OCPPReservationStatus } from '../ocpp/OCPPClient';
-import { ReservationType } from '../Reservation';
+import { ReservationStatus, ReservationType } from '../Reservation';
 import HttpByIDRequest from './HttpByIDRequest';
 import HttpDatabaseRequest from './HttpDatabaseRequest';
 
@@ -9,6 +8,18 @@ export interface HttpReservationGetRequest extends HttpByIDRequest {
 
 export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
   Search: string;
+  ReservationID: string;
+  ChargingStationID: string;
+  ConnectorID: string;
+  UserID: string;
+  CarID: string;
+  SiteID: string;
+  SiteAreaID: string;
+  CompanyID: string;
+  StartDateTime: Date;
+  EndDateTime: Date;
+  Status: ReservationStatus;
+  Type: ReservationType;
   WithUser: boolean;
   WithChargingStation: boolean;
   WithCar: boolean;
@@ -27,14 +38,12 @@ export interface HttpReservationCreateRequest {
   expiryDate?: Date;
   arrivalTime?: Date;
   idTag: string;
+  visualTagID?: string;
   parentIdTag?: string;
   userID?: string;
   carID?: string;
-  siteID?: string;
-  siteAreaID?: string;
-  companyID?: string;
   type: ReservationType;
-  status: OCPPReservationStatus;
+  status: ReservationStatus;
 }
 
 export interface HttpReservationUpdateRequest {
@@ -46,14 +55,12 @@ export interface HttpReservationUpdateRequest {
   expiryDate?: Date;
   arrivalTime?: Date;
   idTag: string;
+  visualTagID?: string;
   parentIdTag?: string;
   userID?: string;
   carID?: string;
-  siteID?: string;
-  siteAreaID?: string;
-  companyID?: string;
   type: ReservationType;
-  status: OCPPReservationStatus;
+  status: ReservationStatus;
 }
 
 export interface HttpReservationDeleteRequest {

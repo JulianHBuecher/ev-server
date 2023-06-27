@@ -11,16 +11,29 @@
       "$ref": "chargingstation#/definitions/connector/properties/connectorId"
     },
     "fromDate": {
-      "$ref": "common#/definitions/date"
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
     },
     "toDate": {
-      "$ref": "common#/definitions/date"
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
     },
     "expiryDate": {
-      "$ref": "common#/definitions/date"
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
     },
     "arrivalTime": {
-      "$ref": "common#/definitions/date"
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo",
+      "nullable": true
     },
     "idTag": {
       "$ref": "tag#/definitions/id"
@@ -28,31 +41,29 @@
     "parentIdTag": {
       "$ref": "tag#/definitions/id"
     },
-    "userID": {
-      "$ref": "user#/definitions/id"
-    },
     "carID": {
       "$ref": "car#/definitions/id"
     },
-    "siteID": {
-      "$ref": "site#/definitions/id"
-    },
-    "siteAreaID": {
-      "$ref": "site-area#/definitions/id"
-    },
-    "companyID": {
-      "$ref": "company#/definitions/id"
+    "userID": {
+      "$ref": "user#/definitions/id"
     },
     "type": {
       "type": "string",
       "sanitize": "mongo",
-      "enum": ["NOW", "PLANNED"]
+      "enum": ["planned_reservation", "reserve_now"]
     },
     "status": {
       "type": "string",
       "sanitize": "mongo",
-      "enum": ["ACCEPTED", "CANCELLED"]
+      "enum": [
+        "reservation_done",
+        "reservation_scheduled",
+        "reservation_in_progress",
+        "reservation_cancelled",
+        "reservation_inactive",
+        "reservation_expired"
+      ]
     }
   },
-  "required": ["id", "connectorId", "expiryDate", "idTag", "type"]
+  "required": ["id", "chargingStationId", "connectorId", "expiryDate", "idTag", "type"]
 }
