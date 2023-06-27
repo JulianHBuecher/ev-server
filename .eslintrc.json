@@ -2,20 +2,14 @@
   "$schema": "https://json.schemastore.org/eslintrc",
   "root": true,
   "env": {
-    "es2022": true,
-    "node": true,
-    "mocha": true
-  },
-  "parserOptions": {
-    "ecmaVersion": 2022,
-    "sourceType": "module"
+    "node": true
   },
   "plugins": ["import"],
   "extends": ["eslint:recommended", "plugin:import/recommended", "plugin:prettier/recommended"],
   "settings": {
     "import/resolver": {
       "typescript": {
-        "project": "./tsconfig.json"
+        "project": "´tsconfig.json"
       }
     }
   },
@@ -156,6 +150,7 @@
         "@typescript-eslint/array-type": "off",
         "semi": "off",
         "@typescript-eslint/semi": ["error", "always"],
+        /* TODO: Return to error values (if time is given) */
         "@typescript-eslint/no-empty-function": "warn",
         "@typescript-eslint/no-unsafe-argument": "warn",
         "@typescript-eslint/no-unsafe-assignment": "warn",

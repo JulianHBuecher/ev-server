@@ -367,7 +367,9 @@ export default class ReservationService {
     }
     const newReservation = this.buildNewReservation(req, filteredRequest);
     await ReservationService.checkForReservationCollisions(req, newReservation);
-    await ReservationService.preventMultipleReserveNow(req, filteredRequest);
+    if (newReservation.type === ReservationType.RESERVE_NOW) {
+      await ReservationService.preventMultipleReserveNow(req, filteredRequest);
+    }
     const result = await ReservationService.contactChargingStation(req, action, newReservation);
     if (!Utils.isNullOrUndefined(result)) {
       ReservationService.handleReservationResponses(result, newReservation);
