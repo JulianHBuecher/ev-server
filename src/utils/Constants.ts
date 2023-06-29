@@ -1,3 +1,5 @@
+import { OcppParameter } from '../types/ChargingStation';
+import DbParams from '../types/database/DbParams';
 import {
   OCPPAttribute,
   OCPPLocation,
@@ -7,11 +9,9 @@ import {
   OCPPUnitOfMeasure,
   OCPPValueFormat,
 } from '../types/ocpp/OCPPServer';
-
-import DbParams from '../types/database/DbParams';
-import Logging from './Logging';
-import { OcppParameter } from '../types/ChargingStation';
+import { ReservationStatus, ReservationStatusTransition } from '../types/Reservation';
 import Tenant from '../types/Tenant';
+import Logging from './Logging';
 
 export default class Constants {
   public static readonly ONE_BILLION = 1000000000;
@@ -41,22 +41,26 @@ export default class Constants {
     skip: 0,
     sort: null,
   });
+
   public static readonly DB_PARAMS_SINGLE_RECORD: DbParams = Object.freeze({
     limit: 1,
     skip: 0,
     sort: null,
   });
+
   public static readonly DB_PARAMS_DEFAULT_RECORD: DbParams = Object.freeze({
     limit: Constants.DB_RECORD_COUNT_DEFAULT,
     skip: 0,
     sort: null,
   });
+
   public static readonly DB_PARAMS_COUNT_ONLY: DbParams = Object.freeze({
     limit: Constants.DB_RECORD_COUNT_NO_LIMIT,
     skip: 0,
     onlyRecordCount: true,
     sort: null,
   });
+
   public static readonly DB_MAX_PING_TIME_MILLIS = 3000;
 
   public static readonly EXPORT_PDF_PAGE_SIZE = 100;
@@ -320,6 +324,7 @@ export default class Constants {
     'cs_CZ',
     'en_AU',
   ]);
+
   public static readonly SUPPORTED_LANGUAGES = Object.freeze([
     'en',
     'fr',
@@ -329,6 +334,7 @@ export default class Constants {
     'it',
     'cs',
   ]);
+
   public static readonly DEFAULT_LOCALE = 'en_US';
   public static readonly DEFAULT_LANGUAGE = 'en';
 
@@ -363,8 +369,10 @@ export default class Constants {
   public static readonly REGEX_VALIDATION_LATITUDE = /^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?)$/;
   public static readonly REGEX_VALIDATION_LONGITUDE =
     /^[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/;
+
   public static readonly REGEX_URL_PATTERN =
-    /^(?:https?|wss?):\/\/((?:[\w-]+)(?:\.[\w-]+)*)(?:[\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?$/;
+    /^(?:https?|wss?):\/\/((?:[\w-]+)(?:\.[\w-]+)*)(?:[\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?$/; //eslint-disable-line
+
   public static readonly MAX_GPS_DISTANCE_METERS = 40000000; // Earth
 
   public static readonly CSV_CHARACTERS_TO_ESCAPE = /^[+\-@=].*$/;
@@ -535,14 +543,17 @@ export default class Constants {
 
   public static readonly WEB_SOCKET_OCPP_NEW_CONNECTIONS_COUNT =
     'web_socket_ocpp_new_connections_count';
+
   public static readonly WEB_SOCKET_OCPP_CLOSED_CONNECTIONS_COUNT =
     'web_socket_ocpp_closed_connections_count';
+
   public static readonly WEB_SOCKET_OCPP_CONNECTIONS_COUNT = 'web_socket_ocpp_connections_count';
   public static readonly WEB_SOCKET_CURRENT_REQUEST = 'web_socket_current_request';
   public static readonly WEB_SOCKET_REST_CONNECTIONS_COUNT = 'web_socket_rest_connections_count';
   public static readonly WEB_SOCKET_RUNNING_REQUEST = 'web_socket_running_request';
   public static readonly WEB_SOCKET_RUNNING_REQUEST_RESPONSE =
     'web_socket_running_request_response';
+
   public static readonly WEB_SOCKET_QUEUED_REQUEST = 'web_socket_queued_request';
 
   public static readonly MONGODB_CONNECTION_POOL_CREATED = 'mongodb_connectionPoolCreated';
@@ -555,4 +566,17 @@ export default class Constants {
   public static readonly MONGODB_CONNECTION_CHECK_OUT = 'mongodb_connectionCheckOut';
   public static readonly MONGODB_CONNECTION_CHECK_IN = 'mongodb_connectionCheckIn';
   public static readonly MONGODB_CONNECTION_POOL_CLEARED = 'mongodb_connectionPoolCleared';
+
+  public static readonly ReservationStatusTransitions: Readonly<ReservationStatusTransition[]> =
+    Object.freeze([
+      { to: ReservationStatus.IN_PROGRESS },
+      { to: ReservationStatus.SCHEDULED },
+      { from: ReservationStatus.SCHEDULED, to: ReservationStatus.IN_PROGRESS },
+      { from: ReservationStatus.SCHEDULED, to: ReservationStatus.CANCELLED },
+      { from: ReservationStatus.SCHEDULED, to: ReservationStatus.EXPIRED },
+      { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.SCHEDULED },
+      { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.CANCELLED },
+      { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.EXPIRED },
+      { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.DONE },
+    ]);
 }

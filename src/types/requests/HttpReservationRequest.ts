@@ -1,9 +1,12 @@
-import { ReservationStatus, ReservationType } from '../Reservation';
+import { ReservationStatus, ReservationStatusEnum, ReservationType } from '../Reservation';
 import HttpByIDRequest from './HttpByIDRequest';
 import HttpDatabaseRequest from './HttpDatabaseRequest';
 
 export interface HttpReservationGetRequest extends HttpByIDRequest {
-  ID: number;
+  WithUser?: boolean;
+  WithChargingStation?: boolean;
+  WithCar?: boolean;
+  WithTag?: boolean;
 }
 
 export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
@@ -18,7 +21,7 @@ export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
   CompanyID: string;
   StartDateTime: Date;
   EndDateTime: Date;
-  Status: ReservationStatus;
+  Status: ReservationStatusEnum;
   Type: ReservationType;
   WithUser: boolean;
   WithChargingStation: boolean;
@@ -33,34 +36,34 @@ export interface HttpReservationCreateRequest {
   id: number;
   chargingStationID: string;
   connectorID: number;
-  fromDate?: Date;
-  toDate?: Date;
-  expiryDate?: Date;
+  fromDate: Date;
+  toDate: Date;
+  expiryDate: Date;
   arrivalTime?: Date;
   idTag: string;
-  visualTagID?: string;
+  visualTagID: string;
   parentIdTag?: string;
   userID?: string;
   carID?: string;
   type: ReservationType;
-  status: ReservationStatus;
+  status?: ReservationStatusEnum;
 }
 
 export interface HttpReservationUpdateRequest {
   id: number;
   chargingStationID: string;
   connectorID: number;
-  fromDate?: Date;
-  toDate?: Date;
-  expiryDate?: Date;
+  fromDate: Date;
+  toDate: Date;
+  expiryDate: Date;
   arrivalTime?: Date;
   idTag: string;
-  visualTagID?: string;
+  visualTagID: string;
   parentIdTag?: string;
   userID?: string;
   carID?: string;
   type: ReservationType;
-  status: ReservationStatus;
+  status?: ReservationStatusEnum;
 }
 
 export interface HttpReservationDeleteRequest {

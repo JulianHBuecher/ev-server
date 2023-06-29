@@ -257,3 +257,8 @@ export interface HttpChargingStationDiagnosticsGetRequest
     stopTime?: Date;
   };
 }
+
+export interface HttpReservableChargingStationsGetRequest extends HttpChargingStationsGetRequest {
+  FromDate: Date;
+  ToDate: Date;
+}

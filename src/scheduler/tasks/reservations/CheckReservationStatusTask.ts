@@ -49,7 +49,7 @@ export default class CheckReservationStatusTask extends TenantSchedulerTask {
             reservation.status = ReservationStatus.EXPIRED;
             reservationsToUpdate.push(reservation);
           }
-          await ReservationStorage.updateReservations(tenant, reservationsToUpdate);
+          await ReservationStorage.saveReservations(tenant, reservationsToUpdate);
         }
       } catch (error) {
         await Logging.logActionExceptionMessage(

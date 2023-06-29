@@ -24,9 +24,6 @@
     "arrivalTime": {
       "$ref": "reservation#/definitions/arrivalTime"
     },
-    "idTag": {
-      "$ref": "reservation#/definitions/idTag"
-    },
     "visualTagID": {
       "$ref": "tag#/definitions/visualID"
     },
@@ -53,8 +50,7 @@
     "fromDate",
     "toDate",
     "expiryDate",
-    "idTag",
-    "type",
-    "status"
+    "visualTagID",
+    "type"
   ]
 }

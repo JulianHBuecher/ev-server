@@ -11,6 +11,7 @@ import { ReservationDataResult } from '../../../../types/DataResult';
 import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import {
   OCPPCancelReservationResponse,
+  OCPPCancelReservationStatus,
   OCPPReservationStatus,
   OCPPReserveNowResponse,
 } from '../../../../types/ocpp/OCPPClient';
@@ -22,7 +23,11 @@ import {
   HttpReservationUpdateRequest,
   HttpReservationsGetRequest,
 } from '../../../../types/requests/HttpReservationRequest';
-import Reservation, { ReservationStatus, ReservationType } from '../../../../types/Reservation';
+import Reservation, {
+  ReservationStatus,
+  ReservationStatusEnum,
+  ReservationType,
+} from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import { TenantComponents } from '../../../../types/Tenant';
 import Constants from '../../../../utils/Constants';
@@ -54,7 +59,12 @@ export default class ReservationService {
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationGetReq(
       req.query
     );
-    const reservation = await ReservationService.getReservation(req, filteredRequest, Action.READ);
+    const reservation = await ReservationService.getReservation(
+      req,
+      filteredRequest,
+      action,
+      Action.READ
+    );
     res.json(reservation);
     next();
   }
@@ -79,6 +89,7 @@ export default class ReservationService {
     const reservations = await ReservationService.getReservations(
       req,
       filteredRequest,
+      action,
       Action.LIST
     );
     res.json(reservations);
@@ -129,7 +140,7 @@ export default class ReservationService {
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationUpdateReq(
       req.body
     );
-    await ReservationService.updateReservation(req, Action.UPDATE, filteredRequest);
+    await ReservationService.saveReservation(req, action, Action.UPDATE, filteredRequest);
     res.json(Constants.REST_RESPONSE_SUCCESS);
     next();
   }
@@ -213,9 +224,35 @@ export default class ReservationService {
     // TODO: Impl
   }
 
+  protected static checkReservationStatusTransition(
+    reservation: Reservation,
+    status: ReservationStatusEnum
+  ): boolean {
+    const fromStatus = reservation.status;
+    let transitionAllowed = false;
+    if (
+      fromStatus === status ||
+      Constants.ReservationStatusTransitions.findIndex(
+        (transition) => transition.from === fromStatus && transition.to === status
+      ) !== -1
+    ) {
+      transitionAllowed = true;
+    } else {
+      throw new AppError({
+        action: ServerAction.RESERVATION_STATUS_TRANSITION,
+        module: MODULE_NAME,
+        method: ReservationService.checkReservationStatusTransition.name,
+        errorCode: HTTPError.RESERVATION_INVALID_STATUS_TRANSITION_ERROR,
+        message: `Transition from status ${fromStatus} to status ${status} is not permitted'`,
+      });
+    }
+    return transitionAllowed;
+  }
+
   private static async getReservation(
     req: Request,
     filteredRequest: HttpReservationGetRequest,
+    action: ServerAction = ServerAction.RESERVATION,
     authAction: Action = Action.READ,
     additionalFilters: Record<string, any> = {}
   ): Promise<Reservation> {
@@ -238,13 +275,14 @@ export default class ReservationService {
     }
     const reservation = await ReservationStorage.getReservation(
       req.tenant,
-      filteredRequest.ID,
+      filteredRequest.ID as number,
       {
         ...additionalFilters,
         ...authorizations.filters,
-        withChargingStation: true,
-        withTag: true,
-        withUser: true,
+        withChargingStation: filteredRequest.WithChargingStation,
+        withTag: filteredRequest.WithTag,
+        withCar: filteredRequest.WithCar,
+        withUser: filteredRequest.WithUser,
       },
       authorizations.projectFields
     );
@@ -266,6 +304,7 @@ export default class ReservationService {
   private static async getReservations(
     req: Request,
     filteredRequest: HttpReservationsGetRequest,
+    action: ServerAction = ServerAction.RESERVATIONS,
     authAction: Action = Action.LIST,
     additionalFilters: Record<string, any> = {}
   ): Promise<ReservationDataResult> {
@@ -335,10 +374,10 @@ export default class ReservationService {
 
   private static async saveReservation(
     req: Request,
-    action: ServerAction = ServerAction.RESERVATION_CREATE,
-    authAction: Action = Action.CREATE,
-    filteredRequest: HttpReservationCreateRequest
-  ): Promise<string> {
+    action: ServerAction,
+    authAction: Action,
+    filteredRequest: HttpReservationCreateRequest | HttpReservationUpdateRequest
+  ): Promise<Reservation> {
     await AuthorizationService.checkAndGetReservationAuthorizations(
       req.tenant,
       req.user,
@@ -355,6 +394,21 @@ export default class ReservationService {
         action
       );
     }
+    const reservation = await ReservationStorage.getReservation(req.tenant, filteredRequest.id, {
+      withTag: true,
+    });
+    if (
+      !Utils.isNullOrUndefined(reservation) &&
+      reservation?.tag.userID !== filteredRequest.userID
+    ) {
+      throw new AppError({
+        action: ServerAction.RESERVATION_CREATE,
+        module: MODULE_NAME,
+        method: ReservationService.saveReservation.name,
+        errorCode: HTTPError.RESERVATION_ALREADY_EXISTS_ERROR,
+        message: 'Unable to create reservation, reservation with same ID exists for another user',
+      });
+    }
     if (!filteredRequest.idTag) {
       const tag = await UtilsService.checkAndGetTagByVisualIDAuthorization(
         req.tenant,
@@ -365,45 +419,31 @@ export default class ReservationService {
       );
       filteredRequest.idTag = tag.id;
     }
-    const newReservation = this.buildNewReservation(req, filteredRequest);
-    await ReservationService.checkForReservationCollisions(req, newReservation);
-    if (newReservation.type === ReservationType.RESERVE_NOW) {
+    const reservationToSave = this.buildReservation(req, action, filteredRequest, reservation);
+    if (reservation) {
+      ReservationService.checkReservationStatusTransition(reservation, reservationToSave.status);
+    } else {
+      reservationToSave.status = ReservationService.determineReservationStatus(reservationToSave);
+    }
+    await ReservationService.checkForReservationCollisions(req, reservationToSave);
+    if (reservationToSave.type === ReservationType.RESERVE_NOW) {
       await ReservationService.preventMultipleReserveNow(req, filteredRequest);
     }
-    const result = await ReservationService.contactChargingStation(req, action, newReservation);
+    const result = await ReservationService.contactChargingStation(req, action, reservationToSave);
     if (!Utils.isNullOrUndefined(result)) {
-      ReservationService.handleReservationResponses(result, newReservation);
+      ReservationService.handleReservationResponses(result, reservationToSave);
     }
     await Logging.logInfo({
-      ...LoggingHelper.getReservationProperties(newReservation),
+      ...LoggingHelper.getReservationProperties(reservationToSave),
       tenantID: req.tenant.id,
       user: req.user,
       module: MODULE_NAME,
       method: ReservationService.handleCreateReservation.name,
-      message: `'${Utils.buildReservationName(newReservation)}' has been created successfully`,
+      message: `'${Utils.buildReservationName(reservationToSave)}' has been saved successfully`,
       action: action,
-      detailedMessages: { newReservation },
+      detailedMessages: { reservationToSave },
     });
-    return await ReservationStorage.createReservation(req.tenant, newReservation);
-  }
-
-  private static async updateReservation(
-    req: Request,
-    authAction: Action = Action.UPDATE,
-    filteredRequest: HttpReservationUpdateRequest
-  ): Promise<void> {
-    await AuthorizationService.checkAndGetReservationAuthorizations(
-      req.tenant,
-      req.user,
-      {},
-      authAction,
-      filteredRequest as Reservation
-    );
-    await ReservationStorage.updateReservation(req.tenant, {
-      ...filteredRequest,
-      lastChangedBy: { id: req.user.id },
-      lastChangedOn: new Date(),
-    });
+    return await ReservationStorage.saveReservation(req.tenant, reservationToSave);
   }
 
   private static async deleteReservation(
@@ -450,24 +490,31 @@ export default class ReservationService {
       req.user
     );
     const reservation = await ReservationService.getReservation(req, filteredRequest);
-    const result = await this.contactChargingStation(req, action, reservation);
-    if (result.status === OCPPReservationStatus.ACCEPTED) {
-      reservation.status = ReservationStatus.CANCELLED;
-      await ReservationStorage.updateReservation(req.tenant, reservation);
+    ReservationService.checkReservationStatusTransition(
+      reservation,
+      ReservationStatusEnum.CANCELLED
+    );
+    if (reservation.status === ReservationStatus.IN_PROGRESS) {
+      const result = await this.contactChargingStation(req, action, reservation);
+      if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
+        return;
+      }
     }
+    reservation.status = ReservationStatus.CANCELLED;
+    await ReservationStorage.saveReservation(req.tenant, reservation);
   }
 
-  private static determineReservationStatus(reservation: Reservation) {
+  private static determineReservationStatus(reservation: Reservation): ReservationStatusEnum {
     if (reservation.type === ReservationType.RESERVE_NOW) {
-      return ReservationStatus.IN_PROGRESS;
+      return ReservationStatusEnum.IN_PROGRESS;
     }
     const actualDate = moment();
     if (actualDate.isBetween(reservation.fromDate, reservation.toDate)) {
-      return ReservationStatus.IN_PROGRESS;
+      return ReservationStatusEnum.IN_PROGRESS;
     } else if (actualDate.isBefore(reservation.fromDate)) {
-      return ReservationStatus.SCHEDULED;
+      return ReservationStatusEnum.SCHEDULED;
     } else if (actualDate.isAfter(reservation.toDate)) {
-      return ReservationStatus.EXPIRED;
+      return ReservationStatusEnum.EXPIRED;
     }
   }
 
@@ -627,16 +674,25 @@ export default class ReservationService {
     }
   }
 
-  private static buildNewReservation(
+  private static buildReservation(
     req: Request,
-    filteredRequest: HttpReservationCreateRequest
+    action: ServerAction,
+    filteredRequest: HttpReservationCreateRequest | HttpReservationUpdateRequest,
+    oldReservation?: Reservation
   ): Reservation {
-    return {
+    const reservation: Reservation = {
       ...filteredRequest,
-      status: ReservationService.determineReservationStatus({ ...filteredRequest }),
-      createdBy: { id: req.user.id },
-      createdOn: new Date(),
     };
+    if (action === ServerAction.RESERVATION_UPDATE) {
+      reservation.createdBy = oldReservation.createdBy;
+      reservation.createdOn = oldReservation.createdOn;
+      reservation.lastChangedBy = { id: req.user.id };
+      reservation.lastChangedOn = new Date();
+    } else {
+      reservation.createdBy = { id: req.user.id };
+      reservation.createdOn = new Date();
+    }
+    return reservation;
   }
 
   private static async checkForReservationCollisions(
@@ -659,11 +715,14 @@ export default class ReservationService {
     req: Request,
     filteredRequest: HttpReservationCreateRequest | HttpReservationUpdateRequest
   ) {
-    const existingReservations = await ReservationStorage.getReservationsForUser(
+    let existingReservations = await ReservationStorage.getReservationsForUser(
       req.tenant,
       filteredRequest.userID,
       ReservationType.RESERVE_NOW,
-      ReservationStatus.IN_PROGRESS
+      ReservationStatusEnum.IN_PROGRESS
+    );
+    existingReservations = existingReservations.filter(
+      (reservation) => reservation.id !== filteredRequest.id
     );
     if (existingReservations.length > 0) {
       throw new AppError({

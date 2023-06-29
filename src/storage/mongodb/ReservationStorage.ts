@@ -1,6 +1,7 @@
-import { ObjectId, Sort } from 'mongodb';
+import { ModifyResult, ObjectId, Sort } from 'mongodb';
 
 import LoggingDatabaseTableCleanupTask from '../../scheduler/tasks/LoggingDatabaseTableCleanupTask';
+import ChargingStation from '../../types/ChargingStation';
 import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { FilterParams } from '../../types/GlobalType';
@@ -91,6 +92,18 @@ export default class ReservationStorage {
     if (params.dateRange) {
       const dateRange = [
         {
+          $and: [
+            { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
+            { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
+          ],
+        },
+        {
+          $and: [
+            { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
+            { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
+          ],
+        },
+        {
           fromDate: {
             $gte: Utils.convertToDate(params.dateRange.fromDate),
             $lt: Utils.convertToDate(params.dateRange.toDate),
@@ -110,6 +123,7 @@ export default class ReservationStorage {
       }
     }
     if (params.expiryDate) {
+      // Param for searching expired reservations
       filters.expiryDate = {};
       filters.expiryDate.$lte = Utils.convertToDate(params.expiryDate);
     }
@@ -269,6 +283,8 @@ export default class ReservationStorage {
 
     // Convert Object ID to string
     DatabaseUtils.pushConvertObjectIDToString(aggregation, 'carID');
+    // Convert Object ID to string
+    DatabaseUtils.pushConvertObjectIDToString(aggregation, 'tag.userID');
     // Add Created By / Last Changed By
     DatabaseUtils.pushCreatedLastChangedInAggregation(tenant.id, aggregation);
     // Project
@@ -334,12 +350,12 @@ export default class ReservationStorage {
     return reservation;
   }
 
-  public static async createReservation(
+  public static async saveReservation(
     tenant: Tenant,
     reservationToSave: Reservation
-  ): Promise<string> {
+  ): Promise<Reservation> {
     const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.createReservation.name;
+    const METHOD_NAME = this.saveReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
     const reservation =
       ReservationValidatorStorage.getInstance().validateReservation(reservationToSave);
@@ -351,18 +367,11 @@ export default class ReservationStorage {
     const createdReservation = await global.database
       .getCollection<any>(tenant.id, COLLECTION_NAME)
       .findOneAndUpdate(
-        { _id: new ObjectId(reservationMDB.id) },
+        { id: reservationMDB.id },
         {
           $set: reservationMDB,
         },
         { upsert: true, returnDocument: 'after' }
-      );
-    await global.database
-      .getCollection<any>(tenant.id, 'chargingstations')
-      .findOneAndUpdate(
-        { _id: reservationToSave.chargingStationID },
-        { $set: { 'connectors.$[connector].reservation': reservationToSave.id } },
-        { arrayFilters: [{ 'connector.connectorId': { $eq: reservationToSave.connectorID } }] }
       );
     await Logging.traceDatabaseRequestEnd(
       tenant,
@@ -371,44 +380,18 @@ export default class ReservationStorage {
       startTime,
       createdReservation
     );
-    return createdReservation.value.id.toString();
+    return createdReservation.value as Reservation;
   }
 
-  public static async updateReservation(
-    tenant: Tenant,
-    reservationToUpdate: Reservation
-  ): Promise<string> {
-    const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.updateReservation.name;
-    DatabaseUtils.checkTenantObject(tenant);
-    const reservation =
-      ReservationValidatorStorage.getInstance().validateReservation(reservationToUpdate);
-    const reservationMDB = {
-      ...reservation,
-      carID: reservation.carID ? DatabaseUtils.convertToObjectID(reservation.carID) : null,
-    };
-    const updatedReservation = await global.database
-      .getCollection<any>(tenant.id, COLLECTION_NAME)
-      .findOneAndUpdate({ id: reservationToUpdate.id }, { $set: reservationMDB });
-    await Logging.traceDatabaseRequestEnd(
-      tenant,
-      MODULE_NAME,
-      METHOD_NAME,
-      startTime,
-      updatedReservation
-    );
-    return updatedReservation.value._id.toString();
-  }
-
-  public static async updateReservations(
+  public static async saveReservations(
     tenant: Tenant,
     reservationsToUpdate: Reservation[]
-  ): Promise<string[]> {
+  ): Promise<Reservation[]> {
     const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.updateReservations.name;
-    const updatedReservations: string[] = [];
+    const METHOD_NAME = this.saveReservations.name;
+    const updatedReservations: Reservation[] = [];
     for (const reservation of reservationsToUpdate) {
-      updatedReservations.push(await this.updateReservation(tenant, reservation));
+      updatedReservations.push(await this.saveReservation(tenant, reservation));
     }
     await Logging.traceDatabaseRequestEnd(
       tenant,
@@ -440,13 +423,11 @@ export default class ReservationStorage {
     filters.id = {
       $eq: reservationID,
     };
-    await global.database
-      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .findOneAndUpdate(filters, {
-        $set: {
-          status: ReservationStatus.CANCELLED,
-        },
-      });
+    await global.database.getCollection<any>(tenant.id, COLLECTION_NAME).findOneAndUpdate(filters, {
+      $set: {
+        status: ReservationStatus.CANCELLED,
+      },
+    });
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, {
       reservationID,
     });
@@ -459,6 +440,7 @@ export default class ReservationStorage {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getCollidingReservations.name;
     const filters: FilterParams = {};
+    filters.id = { $ne: reservation.id };
     filters.chargingStationID = { $eq: reservation.chargingStationID };
     filters.connectorID = { $eq: reservation.connectorID };
     filters.status = { $in: [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED] };

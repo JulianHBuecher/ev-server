@@ -1,8 +1,8 @@
-import { RESTServerRoute, ServerAction } from '../../../../../types/Server';
 import express, { NextFunction, Request, Response } from 'express';
 
-import ChargingStationService from '../../service/ChargingStationService';
+import { RESTServerRoute, ServerAction } from '../../../../../types/Server';
 import RouterUtils from '../../../../../utils/RouterUtils';
+import ChargingStationService from '../../service/ChargingStationService';
 import TransactionService from '../../service/TransactionService';
 
 export default class ChargingStationRouter {
@@ -48,6 +48,7 @@ export default class ChargingStationRouter {
     this.buildRouteChargingStationGetStatusNotifications();
     this.buildRouteChargingStationReserveNow();
     this.buildRouteChargingStationCancelReservation();
+    this.buildRouteChargingStationReservationAvailability();
     return this.router;
   }
 
@@ -589,6 +590,21 @@ export default class ChargingStationRouter {
         void RouterUtils.handleRestServerAction(
           ChargingStationService.handleCancelReservation.bind(this),
           ServerAction.CHARGING_STATION_CANCEL_RESERVATION,
+          req,
+          res,
+          next
+        );
+      }
+    );
+  }
+
+  private buildRouteChargingStationReservationAvailability(): void {
+    this.router.get(
+      `/${RESTServerRoute.REST_CHARGING_STATIONS_RESERVATION_AVAILABILITY}`,
+      (req: Request, res: Response, next: NextFunction) => {
+        void RouterUtils.handleRestServerAction(
+          ChargingStationService.handleGetChargingStationsReservationAvailability.bind(this),
+          ServerAction.CHARGING_STATIONS,
           req,
           res,
           next

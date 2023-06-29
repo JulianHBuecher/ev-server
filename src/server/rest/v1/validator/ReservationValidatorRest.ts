@@ -9,7 +9,6 @@ import {
   HttpReservationUpdateRequest,
   HttpReservationsGetRequest,
 } from '../../../../types/requests/HttpReservationRequest';
-import Reservation from '../../../../types/Reservation';
 import Schema from '../../../../types/validator/Schema';
 import SchemaValidator from '../../../../validator/SchemaValidator';
 

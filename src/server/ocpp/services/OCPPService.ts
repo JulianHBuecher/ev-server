@@ -1,4 +1,44 @@
+import moment from 'moment';
+import momentDurationFormatSetup from 'moment-duration-format';
+
+import AsyncTaskBuilder from '../../../async-task/AsyncTaskBuilder';
+import ChargingStationClientFactory from '../../../client/ocpp/ChargingStationClientFactory';
+import BackendError from '../../../exception/BackendError';
+import BillingFacade from '../../../integration/billing/BillingFacade';
+import CarConnectorFactory from '../../../integration/car-connector/CarConnectorFactory';
+import PricingFacade from '../../../integration/pricing/PricingFacade';
+import SmartChargingFactory from '../../../integration/smart-charging/SmartChargingFactory';
+import LockingHelper from '../../../locking/LockingHelper';
+import LockingManager from '../../../locking/LockingManager';
+import NotificationHandler from '../../../notification/NotificationHandler';
+import CarStorage from '../../../storage/mongodb/CarStorage';
+import ChargingStationStorage from '../../../storage/mongodb/ChargingStationStorage';
+import ConsumptionStorage from '../../../storage/mongodb/ConsumptionStorage';
+import OCPPStorage from '../../../storage/mongodb/OCPPStorage';
+import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
+import SiteAreaStorage from '../../../storage/mongodb/SiteAreaStorage';
+import TransactionStorage from '../../../storage/mongodb/TransactionStorage';
+import UserStorage from '../../../storage/mongodb/UserStorage';
 import { AsyncTaskType, AsyncTasks } from '../../../types/AsyncTask';
+import { Action } from '../../../types/Authorization';
+import { ChargingProfilePurposeType, ChargingRateUnitType } from '../../../types/ChargingProfile';
+import ChargingStation, {
+  ChargerVendor,
+  Connector,
+  ConnectorCurrentLimitSource,
+  ConnectorType,
+  CurrentType,
+  StaticLimitAmps,
+} from '../../../types/ChargingStation';
+import ChargingStationConfiguration from '../../../types/configuration/ChargingStationConfiguration';
+import Consumption from '../../../types/Consumption';
+import {
+  OCPPCancelReservationRequest,
+  OCPPCancelReservationResponse,
+  OCPPCancelReservationStatus,
+  OCPPRemoteStartStopStatus,
+} from '../../../types/ocpp/OCPPClient';
+import { OCPPHeader } from '../../../types/ocpp/OCPPHeader';
 import {
   ChargePointErrorCode,
   ChargePointStatus,
@@ -40,64 +80,24 @@ import {
   OCPPVersion,
   RegistrationStatus,
 } from '../../../types/ocpp/OCPPServer';
-import { ChargingProfilePurposeType, ChargingRateUnitType } from '../../../types/ChargingProfile';
-import ChargingStation, {
-  ChargerVendor,
-  Connector,
-  ConnectorCurrentLimitSource,
-  ConnectorType,
-  CurrentType,
-  StaticLimitAmps,
-} from '../../../types/ChargingStation';
-import FeatureToggles, { Feature } from '../../../utils/FeatureToggles';
-import Tenant, { TenantComponents } from '../../../types/Tenant';
-import Transaction, { InactivityStatus, TransactionAction } from '../../../types/Transaction';
-
-import { Action } from '../../../types/Authorization';
-import AsyncTaskBuilder from '../../../async-task/AsyncTaskBuilder';
-import BackendError from '../../../exception/BackendError';
-import BillingFacade from '../../../integration/billing/BillingFacade';
-import CarConnectorFactory from '../../../integration/car-connector/CarConnectorFactory';
-import CarStorage from '../../../storage/mongodb/CarStorage';
-import ChargingStationClientFactory from '../../../client/ocpp/ChargingStationClientFactory';
-import ChargingStationConfiguration from '../../../types/configuration/ChargingStationConfiguration';
-import ChargingStationStorage from '../../../storage/mongodb/ChargingStationStorage';
-import { CommonUtilsService } from '../../CommonUtilsService';
-import Constants from '../../../utils/Constants';
-import Consumption from '../../../types/Consumption';
-import ConsumptionStorage from '../../../storage/mongodb/ConsumptionStorage';
-import LockingHelper from '../../../locking/LockingHelper';
-import LockingManager from '../../../locking/LockingManager';
-import Logging from '../../../utils/Logging';
-import LoggingHelper from '../../../utils/LoggingHelper';
-import NotificationHandler from '../../../notification/NotificationHandler';
-import NotificationHelper from '../../../utils/NotificationHelper';
-import OCPIFacade from '../../ocpi/OCPIFacade';
-import OCPPCommon from '../utils/OCPPCommon';
-import { OCPPHeader } from '../../../types/ocpp/OCPPHeader';
-import {
-  OCPPCancelReservationRequest,
-  OCPPCancelReservationResponse,
-  OCPPCancelReservationStatus,
-  OCPPRemoteStartStopStatus,
-} from '../../../types/ocpp/OCPPClient';
-import OCPPStorage from '../../../storage/mongodb/OCPPStorage';
-import OCPPUtils from '../utils/OCPPUtils';
-import OCPPValidator from '../validator/OCPPValidator';
-import OICPFacade from '../../oicp/OICPFacade';
-import PricingFacade from '../../../integration/pricing/PricingFacade';
+import { ReservationStatus, ReservationType } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import SiteArea from '../../../types/SiteArea';
-import SiteAreaStorage from '../../../storage/mongodb/SiteAreaStorage';
-import SmartChargingFactory from '../../../integration/smart-charging/SmartChargingFactory';
-import TransactionStorage from '../../../storage/mongodb/TransactionStorage';
+import Tenant, { TenantComponents } from '../../../types/Tenant';
+import Transaction, { InactivityStatus, TransactionAction } from '../../../types/Transaction';
 import User from '../../../types/User';
-import UserStorage from '../../../storage/mongodb/UserStorage';
+import Constants from '../../../utils/Constants';
+import FeatureToggles, { Feature } from '../../../utils/FeatureToggles';
+import Logging from '../../../utils/Logging';
+import LoggingHelper from '../../../utils/LoggingHelper';
+import NotificationHelper from '../../../utils/NotificationHelper';
 import Utils from '../../../utils/Utils';
-import moment from 'moment';
-import momentDurationFormatSetup from 'moment-duration-format';
-import Reservation from '../../../types/Reservation';
-import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
+import { CommonUtilsService } from '../../CommonUtilsService';
+import OCPIFacade from '../../ocpi/OCPIFacade';
+import OICPFacade from '../../oicp/OICPFacade';
+import OCPPCommon from '../utils/OCPPCommon';
+import OCPPUtils from '../utils/OCPPUtils';
+import OCPPValidator from '../validator/OCPPValidator';
 
 momentDurationFormatSetup(moment as any);
 
@@ -672,7 +672,8 @@ export default class OCPPService {
       );
       // Save
       await ChargingStationStorage.saveChargingStation(tenant, chargingStation);
-      // Notify
+      // Reservation Handling
+      await this.processReservationInStartTransaction(tenant, startTransaction);
       NotificationHelper.notifyStartTransaction(tenant, newTransaction, chargingStation, user);
       await Logging.logInfo({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
@@ -908,15 +909,14 @@ export default class OCPPService {
     }
     try {
       const { chargingStation, tenant } = headers;
-      const reservationId = cancelReservation.reservationId;
-      await ReservationStorage.deleteReservation(tenant, reservationId);
+      await ReservationStorage.cancelReservation(tenant, cancelReservation.reservationId);
       await Logging.logDebug({
         tenantID: tenant.id,
         action: ServerAction.RESERVATION_DELETE,
-        message: `Reservation ${reservationId} has been cancelled successfully!`,
+        message: `Reservation ${cancelReservation.reservationId} has been cancelled successfully!`,
         module: MODULE_NAME,
         method: this.handleCancelReservation.name,
-        detailedMessages: { reservationId },
+        detailedMessages: { cancelReservation },
       });
       NotificationHelper.sendChargingStationRegistered(tenant, chargingStation);
       return {
@@ -2917,5 +2917,22 @@ export default class OCPPService {
       statusNotifications.push(`vendorId: '${statusNotification.vendorId}'`);
     }
     return statusNotifications.join(', ');
+  }
+
+  private async processReservationInStartTransaction(
+    tenant: Tenant,
+    transaction: OCPPStartTransactionRequestExtended
+  ) {
+    const reservation = await ReservationStorage.getReservation(tenant, transaction.reservationId);
+    if (Utils.isNullOrUndefined(reservation)) {
+      // No reservation exists for this ID
+    }
+    if (reservation.type === ReservationType.RESERVE_NOW) {
+      reservation.status = ReservationStatus.DONE;
+    } else {
+      // Check if toDate before now and calculate, if another day for reservation
+      // is thinkable
+    }
+    await ReservationStorage.saveReservation(tenant, reservation);
   }
 }

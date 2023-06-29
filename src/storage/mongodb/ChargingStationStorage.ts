@@ -1,15 +1,18 @@
-import { ChargePointStatus, OCPPFirmwareStatus } from '../../types/ocpp/OCPPServer';
+import moment from 'moment';
+import {
+  GridFSBucket,
+  GridFSBucketReadStream,
+  GridFSBucketWriteStream,
+  ObjectId,
+  UpdateResult,
+} from 'mongodb';
+
+import BackendError from '../../exception/BackendError';
 import {
   ChargingProfile,
   ChargingProfilePurposeType,
   ChargingRateUnitType,
 } from '../../types/ChargingProfile';
-import {
-  ChargingProfileDataResult,
-  ChargingStationDataResult,
-  ChargingStationInErrorDataResult,
-  DataResult,
-} from '../../types/DataResult';
 import ChargingStation, {
   ChargePoint,
   ChargingStationOcpiData,
@@ -24,27 +27,24 @@ import ChargingStation, {
   RemoteAuthorization,
   Voltage,
 } from '../../types/ChargingStation';
+import DbParams from '../../types/database/DbParams';
 import {
-  GridFSBucket,
-  GridFSBucketReadStream,
-  GridFSBucketWriteStream,
-  ObjectId,
-  UpdateResult,
-} from 'mongodb';
-import Tenant, { TenantComponents } from '../../types/Tenant';
+  ChargingProfileDataResult,
+  ChargingStationDataResult,
+  ChargingStationInErrorDataResult,
+  DataResult,
+} from '../../types/DataResult';
 import global, { DatabaseCount, FilterParams } from '../../types/GlobalType';
-
-import BackendError from '../../exception/BackendError';
 import { ChargingStationInErrorType } from '../../types/InError';
-import ChargingStationValidatorStorage from '../validator/ChargingStationValidatorStorage';
+import { ChargePointStatus, OCPPFirmwareStatus } from '../../types/ocpp/OCPPServer';
+import Tenant, { TenantComponents } from '../../types/Tenant';
+import { InactivityStatus } from '../../types/Transaction';
 import Configuration from '../../utils/Configuration';
 import Constants from '../../utils/Constants';
-import DatabaseUtils from './DatabaseUtils';
-import DbParams from '../../types/database/DbParams';
-import { InactivityStatus } from '../../types/Transaction';
 import Logging from '../../utils/Logging';
 import Utils from '../../utils/Utils';
-import moment from 'moment';
+import ChargingStationValidatorStorage from '../validator/ChargingStationValidatorStorage';
+import DatabaseUtils from './DatabaseUtils';
 
 const MODULE_NAME = 'ChargingStationStorage';
 
@@ -134,7 +134,6 @@ export default class ChargingStationStorage {
       siteIDs?: string[];
       withSiteArea?: boolean;
       withSite?: boolean;
-      withReservation?: boolean;
     } = {},
     projectFields?: string[]
   ): Promise<ChargingStation> {
@@ -235,7 +234,6 @@ export default class ChargingStationStorage {
       locMaxDistanceMeters?: number;
       public?: boolean;
       manualConfiguration?: boolean;
-      withReservation?: boolean;
     },
     dbParams: DbParams,
     projectFields?: string[]
@@ -340,18 +338,6 @@ export default class ChargingStationStorage {
     if (!Utils.isEmptyArray(params.connectorTypes)) {
       DatabaseUtils.pushArrayFilterInAggregation(aggregation, 'connectors', {
         'connectors.type': { $in: params.connectorTypes },
-      });
-    }
-    // Reservations on Connector
-    if (params.withReservation) {
-      DatabaseUtils.pushReservationLookupInAggregation({
-        tenantID: tenant.id,
-        aggregation: aggregation,
-        asField: 'connectors.reservation',
-        localField: 'connectors.reservationID',
-        foreignField: 'id',
-        oneToOneCardinality: true,
-        oneToOneCardinalityNotNull: false,
       });
     }
     // With no Site Area

@@ -3,11 +3,10 @@ import moment from 'moment';
 import ChargingStationClientFactory from '../../../client/ocpp/ChargingStationClientFactory';
 import LockingManager from '../../../locking/LockingManager';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
-import ChargingStation from '../../../types/ChargingStation';
 import { LockEntity } from '../../../types/Locking';
 import { OCPPReservationStatus } from '../../../types/ocpp/OCPPClient';
 import { ChargePointStatus } from '../../../types/ocpp/OCPPServer';
-import { ReservationStatus, ReservationType } from '../../../types/Reservation';
+import { ReservationStatus } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import { TaskConfig } from '../../../types/TaskConfig';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
@@ -37,6 +36,7 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
     );
     if (await LockingManager.acquire(reservationsLock)) {
       try {
+        // TODO: Validate, that we need five minutes here
         const upcomingReservations = await ReservationStorage.getReservations(
           tenant,
           {
@@ -50,9 +50,7 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           tenant,
           {
             withChargingStation: true,
-            dateRange: { fromDate: moment().toDate(), toDate: moment().add(5, 'minutes').toDate() },
             statuses: [ReservationStatus.IN_PROGRESS],
-            types: [ReservationType.PLANNED_RESERVATION],
           },
           Constants.DB_PARAMS_MAX_LIMIT
         );
@@ -62,7 +60,7 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
             const chargingStationClient =
               await ChargingStationClientFactory.getChargingStationClient(
                 tenant,
-                reservation['chargingStation'] as ChargingStation
+                reservation.chargingStation
               );
             const response = await chargingStationClient.reserveNow({
               connectorId: reservation.connectorID,
@@ -72,17 +70,15 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
               parentIdTag: reservation.parentIdTag ?? '',
             });
             if (response.status === OCPPReservationStatus.ACCEPTED) {
-              await ReservationStorage.updateReservation(tenant, reservation);
+              await ReservationStorage.saveReservation(tenant, reservation);
             }
           }
         }
         if (!Utils.isEmptyArray(ongoingReservations.result)) {
           for (const reservation of ongoingReservations.result) {
-            const chargingStation = reservation['chargingStation'] as ChargingStation;
-            if (
-              chargingStation.connectors[reservation.connectorID].status ===
-              ChargePointStatus.AVAILABLE
-            ) {
+            const chargingStation = reservation.chargingStation;
+            const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
+            if (connector.status === ChargePointStatus.AVAILABLE) {
               const chargingStationClient =
                 await ChargingStationClientFactory.getChargingStationClient(
                   tenant,

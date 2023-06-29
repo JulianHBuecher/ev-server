@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import { OCPIServerRoute, OCPIServerRouteVersions, ServerAction } from '../../../../types/Server';
 import express, { NextFunction, Request, Response } from 'express';
 
+import { OCPIServerRoute, OCPIServerRouteVersions, ServerAction } from '../../../../types/Server';
+import RouterUtils from '../../../../utils/RouterUtils';
+import CPOVersionsService from '../../service/cpo/CPOVersionsService';
+import CPOEMSPCredentialsRouterV211 from '../common/V2.1.1/CPOEMSPCredentialsRouterV211';
 import CPOCdrsRouterV211 from './V2.1.1/CPOCdrsRouterV211';
 import CPOCommandsRouterV211 from './V2.1.1/CPOCommandsRouterV211';
-import CPOEMSPCredentialsRouterV211 from '../common/V2.1.1/CPOEMSPCredentialsRouterV211';
 import CPOLocationsRouterV211 from './V2.1.1/CPOLocationsRouterV211';
 import CPOSessionsRouterV211 from './V2.1.1/CPOSessionsRouterV211';
 import CPOTariffsRouterV211 from './V2.1.1/CPOTariffsRouterV211';
 import CPOTokensRouterV211 from './V2.1.1/CPOTokensRouterV211';
-import CPOVersionsService from '../../service/cpo/CPOVersionsService';
-import RouterUtils from '../../../../utils/RouterUtils';
 
 export default class CPORouter {
   private router: express.Router;

@@ -21,9 +21,6 @@
     "expiryDate": {
       "$ref": "reservation#/definitions/expiryDate"
     },
-    "idTag": {
-      "$ref": "reservation#/definitions/idTag"
-    },
     "visualTagID": {
       "$ref": "tag#/definitions/visualID"
     },
@@ -40,5 +37,5 @@
       "$ref": "reservation#/definitions/type"
     }
   },
-  "required": ["id", "chargingStationID", "connectorID", "idTag"]
+  "required": ["id", "chargingStationID", "connectorID", "visualTagID"]
 }

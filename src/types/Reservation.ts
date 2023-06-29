@@ -1,21 +1,48 @@
 import { ReservationAuthorizationActions } from './Authorization';
+import { Car } from './Car';
+import ChargingStation from './ChargingStation';
 import CreatedUpdatedProps from './CreatedUpdatedProps';
 import { ImportStatus } from './GlobalType';
+import Tag from './Tag';
 
 export default interface Reservation extends CreatedUpdatedProps, ReservationAuthorizationActions {
   id: number;
   chargingStationID: string;
+  chargingStation?: ChargingStation;
   connectorID: number;
   fromDate?: Date;
   toDate?: Date;
-  expiryDate?: Date;
+  expiryDate: Date;
   arrivalTime?: Date;
   idTag: string;
+  tag?: Tag;
   parentIdTag?: string;
   carID?: string;
+  car?: Car;
   type: ReservationType;
-  status: ReservationStatus;
+  status?: ReservationStatusEnum;
 }
+
+export enum ReservationStatus {
+  DONE = 'reservation_done',
+  SCHEDULED = 'reservation_scheduled',
+  IN_PROGRESS = 'reservation_in_progress',
+  CANCELLED = 'reservation_cancelled',
+  EXPIRED = 'reservation_expired',
+}
+
+export enum ReservationType {
+  PLANNED_RESERVATION = 'planned_reservation',
+  RESERVE_NOW = 'reserve_now',
+}
+
+export const ReservationStatusEnum = { ...ReservationStatus };
+export type ReservationStatusEnum = ReservationStatus;
+
+export type ReservationStatusTransition = Readonly<{
+  from?: ReservationStatusEnum;
+  to: ReservationStatusEnum;
+}>;
 
 export interface ImportedReservation {
   id: number;
@@ -36,18 +63,4 @@ export interface ImportedReservation {
   importedData?: {
     autoActivateReservationAtImport: boolean;
   };
-}
-
-export enum ReservationStatus {
-  DONE = 'reservation_done',
-  SCHEDULED = 'reservation_scheduled',
-  IN_PROGRESS = 'reservation_in_progress',
-  CANCELLED = 'reservation_cancelled',
-  INACTIVE = 'reservation_inactive',
-  EXPIRED = 'reservation_expired',
-}
-
-export enum ReservationType {
-  PLANNED_RESERVATION = 'planned_reservation',
-  RESERVE_NOW = 'reserve_now',
 }

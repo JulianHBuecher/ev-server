@@ -28,6 +28,7 @@
     "no-return-assign": ["error", "always"],
     "no-useless-catch": "error",
     "no-useless-return": "error",
+    "no-useless-escape": "warn",
     "no-multiple-empty-lines": [
       "error",
       {
@@ -66,7 +67,7 @@
     "max-len": [
       "warn",
       {
-        "code": 100,
+        "code": 190,
         "ignoreUrls": true
       }
     ],

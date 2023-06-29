@@ -53,16 +53,16 @@
       "enum": ["planned_reservation", "reserve_now"]
     },
     "status": {
-      "type": "string",
-      "sanitize": "mongo",
+      "type": ["string", "null"],
       "enum": [
+        null,
         "reservation_done",
         "reservation_scheduled",
         "reservation_in_progress",
         "reservation_cancelled",
-        "reservation_inactive",
         "reservation_expired"
-      ]
+      ],
+      "nullable": true
     }
   },
   "required": ["id", "chargingStationId", "connectorId", "expiryDate", "idTag", "type"]

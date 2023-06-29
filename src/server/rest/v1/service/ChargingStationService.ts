@@ -1054,7 +1054,7 @@ export default class ChargingStationService {
         message: 'Charging Station is not connected to the backend',
       });
     }
-    await ReservationStorage.createReservation(req.tenant, {
+    await ReservationStorage.saveReservation(req.tenant, {
       id: filteredRequest.args.reservationId,
       chargingStationID: chargingStation.id,
       connectorID: filteredRequest.args.connectorId,
@@ -1634,6 +1634,80 @@ export default class ChargingStationService {
     }
     await smartCharging.checkConnection();
     res.json(Constants.REST_RESPONSE_SUCCESS);
+    next();
+  }
+
+  public static async handleGetChargingStationsReservationAvailability(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    // Check if Component is active
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.LIST,
+      Entity.CHARGING_STATION,
+      MODULE_NAME,
+      ChargingStationService.handleGetChargingStationsReservationAvailability.name
+    );
+    const filteredRequest =
+      ChargingStationValidatorRest.getInstance().validateReservableChargingStationsGetReq(
+        req.query
+      );
+    const authorizations = await AuthorizationService.checkAndGetChargingStationsAuthorizations(
+      req.tenant,
+      req.user,
+      Action.LIST,
+      filteredRequest,
+      false
+    );
+    if (!authorizations.authorized) {
+      UtilsService.sendEmptyDataResult(res, next);
+      return;
+    }
+    const reservations = await ReservationStorage.getReservations(
+      req.tenant,
+      {
+        dateRange: { fromDate: filteredRequest.FromDate, toDate: filteredRequest.ToDate },
+        statuses: [ReservationStatus.SCHEDULED, ReservationStatus.IN_PROGRESS],
+      },
+      Constants.DB_PARAMS_MAX_LIMIT
+    );
+    const chargingStations = await ChargingStationStorage.getChargingStations(
+      req.tenant,
+      {
+        issuer: filteredRequest.Issuer,
+        withSite: filteredRequest.WithSite,
+        withSiteArea: filteredRequest.WithSiteArea,
+      },
+      Constants.DB_PARAMS_MAX_LIMIT
+    );
+    const filteredStations = chargingStations.result.filter(
+      (chargingStation) =>
+        !reservations.result
+          .map((reservation) => reservation.chargingStationID)
+          .includes(chargingStation.id)
+    );
+    const reservableChargingStations: DataResult<ChargingStation> = {
+      count: filteredStations.length,
+      result: filteredStations,
+    };
+    // Assign projected fields
+    if (authorizations.projectFields) {
+      reservableChargingStations.projectFields = authorizations.projectFields;
+    }
+    // Add Auth flags
+    if (filteredRequest.WithAuth) {
+      await AuthorizationService.addChargingStationsAuthorizations(
+        req.tenant,
+        req.user,
+        reservableChargingStations,
+        authorizations
+      );
+    }
+    res.json(reservableChargingStations);
     next();
   }
 
