@@ -9,6 +9,7 @@ import { TaskConfig } from '../../../types/TaskConfig';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
 import Constants from '../../../utils/Constants';
 import Logging from '../../../utils/Logging';
+import NotificationHelper from '../../../utils/NotificationHelper';
 import Utils from '../../../utils/Utils';
 import TenantSchedulerTask from '../../TenantSchedulerTask';
 
@@ -38,6 +39,8 @@ export default class CheckReservationStatusTask extends TenantSchedulerTask {
           tenant,
           {
             withChargingStation: true,
+            withTag: true,
+            withUser: true,
             expiryDate: actualDate,
             statuses: [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED],
           },
@@ -47,6 +50,11 @@ export default class CheckReservationStatusTask extends TenantSchedulerTask {
           const reservationsToUpdate: Reservation[] = [];
           for (const reservation of expiredReservations.result) {
             reservation.status = ReservationStatus.EXPIRED;
+            NotificationHelper.notifyReservationStatusChanged(
+              tenant,
+              reservation.tag.user,
+              reservation
+            );
             reservationsToUpdate.push(reservation);
           }
           await ReservationStorage.saveReservations(tenant, reservationsToUpdate);

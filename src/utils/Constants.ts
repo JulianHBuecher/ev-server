@@ -11,7 +11,6 @@ import {
 } from '../types/ocpp/OCPPServer';
 import { ReservationStatus, ReservationStatusTransition } from '../types/Reservation';
 import Tenant from '../types/Tenant';
-import Logging from './Logging';
 
 export default class Constants {
   public static readonly ONE_BILLION = 1000000000;

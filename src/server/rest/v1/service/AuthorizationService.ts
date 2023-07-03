@@ -54,8 +54,14 @@ import {
 } from '../../../../types/DataResult';
 import { EntityData } from '../../../../types/GlobalType';
 import { HTTPAuthError } from '../../../../types/HTTPError';
+import { TransactionInError } from '../../../../types/InError';
+import { Log } from '../../../../types/Log';
+import OCPIEndpoint from '../../../../types/ocpi/OCPIEndpoint';
+import { OCPICapability } from '../../../../types/ocpi/OCPIEvse';
 import { ChargePointStatus, OCPPProtocol, OCPPVersion } from '../../../../types/ocpp/OCPPServer';
+import PricingDefinition from '../../../../types/Pricing';
 import RefundReport, { RefundStatus } from '../../../../types/Refund';
+import RegistrationToken from '../../../../types/RegistrationToken';
 import {
   HttpAssetGetRequest,
   HttpAssetsGetRequest,
@@ -92,10 +98,14 @@ import {
   HttpCompaniesGetRequest,
   HttpCompanyGetRequest,
 } from '../../../../types/requests/HttpCompanyRequest';
+import { HttpLogGetRequest } from '../../../../types/requests/HttpLogRequest';
+import { HttpOCPIEndpointGetRequest } from '../../../../types/requests/HttpOCPIEndpointRequest';
 import {
   HttpPricingDefinitionGetRequest,
   HttpPricingDefinitionsGetRequest,
 } from '../../../../types/requests/HttpPricingRequest';
+import { HttpRegistrationTokenGetRequest } from '../../../../types/requests/HttpRegistrationToken';
+import { HttpReservationGetRequest } from '../../../../types/requests/HttpReservationRequest';
 import {
   HttpSettingGetRequest,
   HttpSettingsGetRequest,
@@ -109,6 +119,7 @@ import {
   HttpSiteGetRequest,
   HttpSiteUsersRequest,
 } from '../../../../types/requests/HttpSiteRequest';
+import HttpStatisticsGetRequest from '../../../../types/requests/HttpStatisticRequest';
 import { HttpTagGetRequest, HttpTagsGetRequest } from '../../../../types/requests/HttpTagRequest';
 import {
   HttpTransactionConsumptionsGetRequest,
@@ -120,11 +131,6 @@ import {
   HttpUserSitesGetRequest,
   HttpUsersGetRequest,
 } from '../../../../types/requests/HttpUserRequest';
-
-import { TransactionInError } from '../../../../types/InError';
-import { Log } from '../../../../types/Log';
-import PricingDefinition from '../../../../types/Pricing';
-import RegistrationToken from '../../../../types/RegistrationToken';
 import Reservation from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import { Setting } from '../../../../types/Setting';
@@ -135,13 +141,6 @@ import Tenant from '../../../../types/Tenant';
 import Transaction from '../../../../types/Transaction';
 import User from '../../../../types/User';
 import UserToken from '../../../../types/UserToken';
-import OCPIEndpoint from '../../../../types/ocpi/OCPIEndpoint';
-import { OCPICapability } from '../../../../types/ocpi/OCPIEvse';
-import { HttpLogGetRequest } from '../../../../types/requests/HttpLogRequest';
-import { HttpOCPIEndpointGetRequest } from '../../../../types/requests/HttpOCPIEndpointRequest';
-import { HttpRegistrationTokenGetRequest } from '../../../../types/requests/HttpRegistrationToken';
-import { HttpReservationGetRequest } from '../../../../types/requests/HttpReservationRequest';
-import HttpStatisticsGetRequest from '../../../../types/requests/HttpStatisticRequest';
 import Utils from '../../../../utils/Utils';
 
 const MODULE_NAME = 'AuthorizationService';
@@ -2350,6 +2349,35 @@ export default class AuthorizationService {
           SiteID: chargingStation.siteID,
         }
       );
+      // Reserve an available connector
+      connector.canReserveNow =
+        (await AuthorizationService.canPerformAuthorizationAction(
+          tenant,
+          userToken,
+          Entity.CONNECTOR,
+          Action.RESERVE_NOW,
+          authorizationFilter,
+          {
+            chargingStationID: chargingStation.id,
+            UserID: connector.user?.id || '',
+            SiteID: chargingStation.siteID,
+          }
+        )) && [ChargePointStatus.AVAILABLE, ChargePointStatus.FINISHING].includes(connector.status);
+      // Cancel the reservation on a reserved connector
+      connector.canCancelReservation =
+        (await AuthorizationService.canPerformAuthorizationAction(
+          tenant,
+          userToken,
+          Entity.CONNECTOR,
+          Action.CANCEL_RESERVATION,
+          authorizationFilter,
+          {
+            chargingStationID: chargingStation.id,
+            UserID: connector.user?.id || '',
+            TagIDs: connector.currentTagID || '',
+            SiteID: chargingStation.siteID,
+          }
+        )) && [ChargePointStatus.RESERVED].includes(connector.status);
       // Remove sensible data
       await AuthorizationService.canPerformAuthorizationAction(
         tenant,

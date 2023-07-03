@@ -1,4 +1,10 @@
 /* eslint-disable max-len */
+import { Promise } from 'bluebird';
+import admin from 'firebase-admin';
+
+import { ServerAction } from '../../types/Server';
+import Tenant from '../../types/Tenant';
+import User, { UserStatus } from '../../types/User';
 import {
   AccountVerificationNotification,
   BillingAccountActivationNotification,
@@ -25,6 +31,7 @@ import {
   OptimalChargeReachedNotification,
   PreparingSessionNotStartedNotification,
   RequestPasswordNotification,
+  ReservationNotification,
   SessionNotStartedNotification,
   TransactionStartedNotification,
   UnknownUserBadgedNotification,
@@ -33,18 +40,12 @@ import {
   UserNotificationType,
   VerificationEmailNotification,
 } from '../../types/UserNotifications';
-import User, { UserStatus } from '../../types/User';
-
 import Configuration from '../../utils/Configuration';
 import Constants from '../../utils/Constants';
 import I18nManager from '../../utils/I18nManager';
 import Logging from '../../utils/Logging';
-import NotificationTask from '../NotificationTask';
-import { Promise } from 'bluebird';
-import { ServerAction } from '../../types/Server';
-import Tenant from '../../types/Tenant';
 import Utils from '../../utils/Utils';
-import admin from 'firebase-admin';
+import NotificationTask from '../NotificationTask';
 
 const MODULE_NAME = 'RemotePushNotificationTask';
 
@@ -916,6 +917,173 @@ export default class RemotePushNotificationTask implements NotificationTask {
 
   public async sendUserCreatePassword(): Promise<NotificationResult> {
     return Promise.resolve({});
+  }
+
+  public async sendReservationStatusNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const title = i18nManager.translate('notifications.reservation-status-notification.title');
+    const body = i18nManager.translate('notifications.reservation-status-notification.body', {
+      chargingStationID: data.chargingStationID,
+      connectorID: data.connectorID,
+      reservationStatus: data.reservationStatus,
+    });
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_STATUS_CHANGED_NOTIFICATION,
+      title,
+      body,
+      user,
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+        reservationStatus: data.reservationStatus,
+      },
+      severity
+    );
+    return {};
+  }
+
+  public async sendUpcomingReservationNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const notificationType = user.id !== data.user.id ? 'warning' : 'notification';
+    severity = notificationType.includes('warning')
+      ? NotificationSeverity.WARNING
+      : NotificationSeverity.INFO;
+    const title = i18nManager.translate(
+      `notifications.upcoming-reservation-${notificationType}.title`
+    );
+    const body = i18nManager.translate(
+      `notifications.upcoming-reservation-${notificationType}.body`,
+      {
+        tenantName: tenant.name,
+        fromDate: data.fromDate,
+        toDate: data.toDate,
+        chargingStationID: data.chargingStationID,
+        connectorID: Utils.getConnectorLetterFromConnectorID(Number(data.connectorID)),
+      }
+    );
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_UPCOMING_NOTIFICATION,
+      title,
+      body,
+      user,
+      {
+        tenantName: tenant.name,
+        fromDate: data.fromDate,
+        toDate: data.toDate,
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+      },
+      severity
+    );
+    return {};
+  }
+
+  public async sendReservedChargingStationBlockedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const title = i18nManager.translate('notifications.reserved-chargingstation-blocked.title');
+    const body = i18nManager.translate('notifications.reserved-chargingstation-blocked.body', {
+      chargingStationID: data.chargingStationID,
+      connectorID: data.connectorID,
+    });
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_CHARGING_STATION_BLOCKED,
+      title,
+      body,
+      user,
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+      },
+      severity
+    );
+    return {};
+  }
+
+  public async sendReservationCreatedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const title = i18nManager.translate('notifications.reservation-created.title');
+    const body = i18nManager.translate('notifications.reservation-created.body', {
+      chargingStationID: data.chargingStationID,
+      connectorID: data.connectorID,
+    });
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_CANCELLED_NOTIFICATION,
+      title,
+      body,
+      user,
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+      },
+      severity
+    );
+    return {};
+  }
+
+  public async sendReservationCancelledNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const title = i18nManager.translate('notifications.reservation-cancelled.title');
+    const body = i18nManager.translate('notifications.reservation-cancelled.body', {
+      chargingStationID: data.chargingStationID,
+      connectorID: data.connectorID,
+    });
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_CANCELLED_NOTIFICATION,
+      title,
+      body,
+      user,
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+      },
+      severity
+    );
+    return {};
   }
 
   private async sendRemotePushNotificationToUser(

@@ -43,7 +43,6 @@ import Configuration from '../../utils/Configuration';
 import Constants from '../../utils/Constants';
 import Logging from '../../utils/Logging';
 import Utils from '../../utils/Utils';
-import ChargingStationValidatorStorage from '../validator/ChargingStationValidatorStorage';
 import DatabaseUtils from './DatabaseUtils';
 
 const MODULE_NAME = 'ChargingStationStorage';
@@ -75,6 +74,7 @@ export interface ConnectorMDB {
   chargePointID: number;
   phaseAssignmentToGrid: PhaseAssignmentToGrid;
   tariffID?: string;
+  reservationID?: number;
 }
 
 export default class ChargingStationStorage {
@@ -234,6 +234,7 @@ export default class ChargingStationStorage {
       locMaxDistanceMeters?: number;
       public?: boolean;
       manualConfiguration?: boolean;
+      withReservation?: boolean;
     },
     dbParams: DbParams,
     projectFields?: string[]
@@ -453,6 +454,21 @@ export default class ChargingStationStorage {
         asField: 'site',
         oneToOneCardinality: true,
       });
+    }
+    // Reservations on Connector
+    if (params.withReservation) {
+      DatabaseUtils.pushArrayLookupInAggregation(
+        'connectors',
+        DatabaseUtils.pushReservationLookupInAggregation.bind(this),
+        {
+          tenantID: tenant.id,
+          aggregation: aggregation,
+          localField: 'connectors.reservationID',
+          foreignField: 'id',
+          asField: 'connectors.reservation',
+          oneToOneCardinality: true,
+        }
+      );
     }
     // Change ID
     DatabaseUtils.pushRenameDatabaseID(aggregation);
@@ -1441,6 +1457,7 @@ export default class ChargingStationStorage {
           csPhaseL2: connector.phaseAssignmentToGrid.csPhaseL2,
           csPhaseL3: connector.phaseAssignmentToGrid.csPhaseL3,
         },
+        reservationID: Utils.convertToInt(connector.reservationID),
       };
       return filteredConnector;
     }

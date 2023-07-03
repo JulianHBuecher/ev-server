@@ -59,6 +59,7 @@ export interface HttpChargingStationsGetRequest extends HttpDatabaseRequest {
   LocCoordinates?: number[];
   LocMaxDistanceMeters?: number;
   Public?: boolean;
+  WithReservation?: boolean;
 }
 
 export interface HttpChargingStationsInErrorGetRequest extends HttpDatabaseRequest {
@@ -98,6 +99,7 @@ export interface HttpChargingStationGetRequest extends HttpByIDRequest {
   ID: string;
   WithSite?: boolean;
   WithSiteArea?: boolean;
+  WithReservation?: boolean;
 }
 
 export interface HttpChargingStationOcppGetRequest {
@@ -224,7 +226,8 @@ export interface HttpChargingStationReserveNowRequest {
   args: {
     connectorId: number;
     expiryDate: Date;
-    idTag: string;
+    idTag?: string;
+    visualTagID: string;
     parentIdTag?: string;
     reservationId: number;
   };

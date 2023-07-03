@@ -5,8 +5,11 @@ import ChargingStationClientFactory from '../../../../client/ocpp/ChargingStatio
 import AppAuthError from '../../../../exception/AppAuthError';
 import AppError from '../../../../exception/AppError';
 import BackendError from '../../../../exception/BackendError';
+import ChargingStationStorage from '../../../../storage/mongodb/ChargingStationStorage';
 import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
+import UserStorage from '../../../../storage/mongodb/UserStorage';
 import { Action, Entity } from '../../../../types/Authorization';
+import ChargingStation from '../../../../types/ChargingStation';
 import { ReservationDataResult } from '../../../../types/DataResult';
 import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import {
@@ -29,11 +32,12 @@ import Reservation, {
   ReservationType,
 } from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
-import { TenantComponents } from '../../../../types/Tenant';
+import Tenant, { TenantComponents } from '../../../../types/Tenant';
 import Constants from '../../../../utils/Constants';
 import I18nManager from '../../../../utils/I18nManager';
 import Logging from '../../../../utils/Logging';
 import LoggingHelper from '../../../../utils/LoggingHelper';
+import NotificationHelper from '../../../../utils/NotificationHelper';
 import Utils from '../../../../utils/Utils';
 import ReservationValidatorRest from '../validator/ReservationValidatorRest';
 import AuthorizationService from './AuthorizationService';
@@ -113,13 +117,15 @@ export default class ReservationService {
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCreateReq(
       req.body
     );
-    const reservationID = await ReservationService.saveReservation(
+    const reservation = await ReservationService.saveReservation(
       req,
       action,
       Action.CREATE,
       filteredRequest
     );
-    res.json(Object.assign({ id: reservationID }, Constants.REST_RESPONSE_SUCCESS));
+    const user = await UserStorage.getUserByTagID(req.tenant, reservation.idTag);
+    NotificationHelper.notifyReservationCreated(req.tenant, user, reservation);
+    res.json(Object.assign({ id: reservation.id }, Constants.REST_RESPONSE_SUCCESS));
     next();
   }
 
@@ -184,12 +190,14 @@ export default class ReservationService {
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCancelReq(
       req.query
     );
-    await ReservationService.cancelReservation(
+    const reservation = await ReservationService.cancelReservation(
       req,
       action,
       Action.CANCEL_RESERVATION,
       filteredRequest
     );
+    const user = await UserStorage.getUserByTagID(req.tenant, reservation.idTag);
+    NotificationHelper.notifyReservationCancelled(req.tenant, user, reservation);
     res.json(Constants.REST_RESPONSE_SUCCESS);
     next();
   }
@@ -466,6 +474,13 @@ export default class ReservationService {
       ReservationService.deleteReservation.name,
       req.user
     );
+    const reservation = await ReservationService.getReservation(req, filteredRequest);
+    if ([ReservationStatus.IN_PROGRESS].includes(reservation.status)) {
+      const result = await this.contactChargingStation(req, action, reservation);
+      if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
+        return;
+      }
+    }
     await ReservationStorage.deleteReservation(req.tenant, filteredRequest.ID);
   }
 
@@ -474,7 +489,7 @@ export default class ReservationService {
     action: ServerAction = ServerAction.RESERVATION_CANCEL,
     authAction: Action = Action.CANCEL_RESERVATION,
     filteredRequest: HttpReservationCancelRequest
-  ): Promise<void> {
+  ): Promise<Reservation> {
     await AuthorizationService.checkAndGetReservationAuthorizations(
       req.tenant,
       req.user,
@@ -501,7 +516,7 @@ export default class ReservationService {
       }
     }
     reservation.status = ReservationStatus.CANCELLED;
-    await ReservationStorage.saveReservation(req.tenant, reservation);
+    return await ReservationStorage.saveReservation(req.tenant, reservation);
   }
 
   private static determineReservationStatus(reservation: Reservation): ReservationStatusEnum {
@@ -552,6 +567,12 @@ export default class ReservationService {
           action
         )
       ) {
+        await ReservationService.updateConnectorWithReservation(
+          req.tenant,
+          chargingStation,
+          reservation,
+          true
+        );
         return chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
           expiryDate: reservation.expiryDate,
@@ -565,6 +586,7 @@ export default class ReservationService {
         action
       )
     ) {
+      await ReservationService.resetConnector(req.tenant, chargingStation, reservation.connectorID);
       return chargingStationClient.cancelReservation({
         reservationId: reservation.id,
       });
@@ -698,8 +720,19 @@ export default class ReservationService {
   private static async checkForReservationCollisions(
     req: Request,
     reservation: Reservation
-  ): Promise<void> {
-    const collisions = await ReservationStorage.getCollidingReservations(req.tenant, reservation);
+  ): Promise<Reservation[]> {
+    const reservationsInRange = await ReservationStorage.getReservationsByDate(
+      req.tenant,
+      reservation.fromDate,
+      reservation.toDate
+    );
+    const collisions = reservationsInRange.filter(
+      (r) =>
+        r.id !== reservation.id &&
+        r.chargingStationID === reservation.chargingStationID &&
+        r.connectorID === reservation.connectorID &&
+        [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED].includes(r.status)
+    );
     if (collisions.length > 0) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
@@ -709,6 +742,7 @@ export default class ReservationService {
         message: `Unable to create reservation, because of collision with '${collisions.length} reservations'`,
       });
     }
+    return collisions;
   }
 
   private static async preventMultipleReserveNow(
@@ -732,6 +766,45 @@ export default class ReservationService {
         errorCode: HTTPError.RESERVATION_MULTIPLE_RESERVE_NOW_ERROR,
         message: `Unable to create reservation, because 'RESERVE NOW' reservation for user '${filteredRequest.userID}' already exists`,
       });
+    }
+  }
+
+  private static async updateConnectorWithReservation(
+    tenant: Tenant,
+    chargingStation: ChargingStation,
+    reservation: Reservation,
+    saveConnector = false
+  ) {
+    const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
+    const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
+    connector.currentUserID = user.id;
+    connector.currentTagID = reservation.idTag;
+    connector.reservationID = reservation.id;
+    if (saveConnector) {
+      await ChargingStationStorage.saveChargingStationConnectors(
+        tenant,
+        chargingStation.id,
+        chargingStation.connectors
+      );
+    }
+  }
+
+  private static async resetConnector(
+    tenant: Tenant,
+    chargingStation: ChargingStation,
+    connectorID: number,
+    saveConnector = false
+  ) {
+    const connector = Utils.getConnectorFromID(chargingStation, connectorID);
+    connector.currentUserID = null;
+    connector.currentTagID = null;
+    connector.reservationID = null;
+    if (saveConnector) {
+      await ChargingStationStorage.saveChargingStationConnectors(
+        tenant,
+        chargingStation.id,
+        chargingStation.connectors
+      );
     }
   }
 }

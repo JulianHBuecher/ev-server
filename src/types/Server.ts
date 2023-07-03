@@ -508,6 +508,8 @@ export enum ServerAction {
   RESERVATIONS_EXPIRE = 'ReservationsExpire',
   SYNCHRONIZE_RESERVATIONS = 'SynchronizeReservations',
   RESERVATION_STATUS_TRANSITION = 'ReservationStatusTransition',
+  RESERVATION_UPCOMING = 'ReservationUpcoming',
+  RESERVATION_CHARGING_STATION_BLOCKED = 'ReservationChargingStationBlocked',
 }
 
 // RESTful API

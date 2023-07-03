@@ -83,6 +83,7 @@ import {
 import { ReservationStatus, ReservationType } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import SiteArea from '../../../types/SiteArea';
+import Tag from '../../../types/Tag';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
 import Transaction, { InactivityStatus, TransactionAction } from '../../../types/Transaction';
 import User from '../../../types/User';
@@ -673,7 +674,7 @@ export default class OCPPService {
       // Save
       await ChargingStationStorage.saveChargingStation(tenant, chargingStation);
       // Reservation Handling
-      await this.processReservationInStartTransaction(tenant, startTransaction);
+      await this.processReservationInStartTransaction(tenant, user, tag, startTransaction);
       NotificationHelper.notifyStartTransaction(tenant, newTransaction, chargingStation, user);
       await Logging.logInfo({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
@@ -909,16 +910,21 @@ export default class OCPPService {
     }
     try {
       const { chargingStation, tenant } = headers;
-      await ReservationStorage.cancelReservation(tenant, cancelReservation.reservationId);
+      const reservation = await ReservationStorage.updateReservationStatus(
+        tenant,
+        cancelReservation.reservationId
+      );
+      const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
       await Logging.logDebug({
         tenantID: tenant.id,
-        action: ServerAction.RESERVATION_DELETE,
+        action: ServerAction.RESERVATION_CANCEL,
         message: `Reservation ${cancelReservation.reservationId} has been cancelled successfully!`,
         module: MODULE_NAME,
         method: this.handleCancelReservation.name,
         detailedMessages: { cancelReservation },
       });
       NotificationHelper.sendChargingStationRegistered(tenant, chargingStation);
+      NotificationHelper.notifyReservationCancelled(tenant, user, reservation);
       return {
         status: OCPPCancelReservationStatus.ACCEPTED,
       };
@@ -2921,18 +2927,51 @@ export default class OCPPService {
 
   private async processReservationInStartTransaction(
     tenant: Tenant,
+    user: User,
+    tag: Tag,
     transaction: OCPPStartTransactionRequestExtended
   ) {
-    const reservation = await ReservationStorage.getReservation(tenant, transaction.reservationId);
-    if (Utils.isNullOrUndefined(reservation)) {
-      // No reservation exists for this ID
-    }
-    if (reservation.type === ReservationType.RESERVE_NOW) {
-      reservation.status = ReservationStatus.DONE;
+    if (!transaction.reservationId) {
+      const reservations = await ReservationStorage.getReservationsByDate(
+        tenant,
+        moment().toDate(),
+        moment().add(1, 'hour').toDate()
+      );
+      const upcomingReservations = reservations.filter(
+        (reservation) => reservation.status === ReservationStatus.SCHEDULED
+      );
+      if (upcomingReservations.length > 0) {
+        const reservation = await ReservationStorage.getReservation(
+          tenant,
+          upcomingReservations[0].id,
+          {
+            withTag: true,
+            withUser: true,
+          }
+        );
+        NotificationHelper.notifyReservedChargingStationBlocked(
+          tenant,
+          reservation.tag.user,
+          upcomingReservations[0]
+        );
+        NotificationHelper.notifyReservationUpcoming(tenant, user, reservation);
+      }
     } else {
-      // Check if toDate before now and calculate, if another day for reservation
-      // is thinkable
+      const reservation = await ReservationStorage.getReservation(
+        tenant,
+        transaction.reservationId,
+        {
+          withTag: true,
+          withUser: true,
+        }
+      );
+      if (
+        reservation.type === ReservationType.RESERVE_NOW ||
+        moment().diff(reservation.toDate, 'days') === 0
+      ) {
+        reservation.status = ReservationStatus.DONE;
+      }
+      await ReservationStorage.saveReservation(tenant, reservation);
     }
-    await ReservationStorage.saveReservation(tenant, reservation);
   }
 }

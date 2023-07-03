@@ -346,6 +346,8 @@ export interface ConnectorAuthorizationActions extends AuthorizationActions {
   canRemoteStartTransaction?: boolean;
   canUnlockConnector?: boolean;
   canReadTransaction?: boolean;
+  canReserveNow?: boolean;
+  canCancelReservation?: boolean;
 }
 
 export interface ChargingProfileAuthorizationActions extends AuthorizationActions {

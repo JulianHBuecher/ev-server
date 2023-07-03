@@ -972,7 +972,8 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
           'connectors.currentTagID',
-          'connectors.reservation',
+          'connectors.reservationID',
+          // 'connectors.reservation',
           'lastReboot',
           'createdOn',
           'connectors.user.id',
@@ -1150,6 +1151,17 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       {
         resource: Entity.CONNECTOR,
         action: [Action.VIEW_USER_DATA],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: [],
+          },
+        },
+      },
+      {
+        resource: Entity.CONNECTOR,
+        action: [Action.RESERVE_NOW, Action.CANCEL_RESERVATION],
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {
@@ -2994,7 +3006,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.vendorErrorCode',
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
-          'connectors.reservation',
+          'connectors.reservationID',
           'lastReboot',
           'createdOn',
           'companyID',
@@ -3072,6 +3084,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.tariffID',
           'connectors.currentTransactionDate',
           'connectors.currentTagID',
+          'connectors.reservationID',
           'ocpiData.evses.capabilities',
           'siteArea',
           'site',
@@ -3173,6 +3186,28 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           args: {
             asserts: [],
             filters: ['AssignedSites'],
+          },
+        },
+      },
+      {
+        resource: Entity.CONNECTOR,
+        action: [Action.RESERVE_NOW],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: [],
+            filters: ['AssignedSites'],
+          },
+        },
+      },
+      {
+        resource: Entity.CONNECTOR,
+        action: [Action.CANCEL_RESERVATION],
+        condition: {
+          Fn: 'custom:dynamicAuthorizations',
+          args: {
+            asserts: ['OwnUser'],
+            filters: ['OwnUser'],
           },
         },
       },
@@ -4192,7 +4227,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.vendorErrorCode',
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
-          'connectors.reservation',
+          'connectors.reservationID',
           'lastReboot',
           'createdOn',
           'companyID',
@@ -4265,6 +4300,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.tariffID',
           'connectors.currentTransactionDate',
           'connectors.currentTagID',
+          'connectors.reservationID',
           'ocpiData.evses.capabilities',
           'siteArea',
           'site',
@@ -5482,6 +5518,7 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
           'connectors.vendorErrorCode',
           'connectors.currentTransactionID',
           'connectors.currentTotalInactivitySecs',
+          'connectors.reservationID',
           'lastReboot',
           'createdOn',
           'companyID',

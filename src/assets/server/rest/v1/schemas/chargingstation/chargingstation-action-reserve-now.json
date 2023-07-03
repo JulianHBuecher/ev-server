@@ -21,6 +21,9 @@
         "idTag": {
           "$ref": "tag#/definitions/id"
         },
+        "visualTagID": {
+          "$ref": "tag#/definitions/visualID"
+        },
         "parentIdTag": {
           "$ref": "tag#/definitions/id"
         },
@@ -29,7 +32,7 @@
           "sanitize": "mongo"
         }
       },
-      "required": ["connectorId", "expiryDate", "idTag", "reservationId"]
+      "required": ["connectorId", "expiryDate", "visualTagID", "reservationId"]
     }
   },
   "required": ["chargingStationId"]

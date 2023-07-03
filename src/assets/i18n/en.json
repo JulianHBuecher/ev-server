@@ -265,16 +265,46 @@
       "buttonText": "View Session",
       "text": ["Ladetransaktion abgeschlossen"],
       "table": [
-        { "label": "Charger", "value": "{{chargeBoxID}}" },
-        { "label": "Connector", "value": "{{connectorId}}" },
-        { "label": "RFID Card", "value": "{{tagId}}" },
-        { "label": "Start time", "value": "{{startDate}}" },
-        { "label": "End time", "value": "{{endDate}}" },
-        { "label": "Start counter", "value": "{{meterStart}} kWh" },
-        { "label": "Stop counter", "value": "{{meterStop}} kWh" },
-        { "label": "Consumption", "value": "{{totalConsumption}} kWh" },
-        { "label": "Cost", "value": "{{price}}€ {{relativeCost}}€/kWh) (informative)" },
-        { "label": "Contract for", "value": "LOCAL (informative)" }
+        {
+          "label": "Charger",
+          "value": "{{chargeBoxID}}"
+        },
+        {
+          "label": "Connector",
+          "value": "{{connectorId}}"
+        },
+        {
+          "label": "RFID Card",
+          "value": "{{tagId}}"
+        },
+        {
+          "label": "Start time",
+          "value": "{{startDate}}"
+        },
+        {
+          "label": "End time",
+          "value": "{{endDate}}"
+        },
+        {
+          "label": "Start counter",
+          "value": "{{meterStart}} kWh"
+        },
+        {
+          "label": "Stop counter",
+          "value": "{{meterStop}} kWh"
+        },
+        {
+          "label": "Consumption",
+          "value": "{{totalConsumption}} kWh"
+        },
+        {
+          "label": "Cost",
+          "value": "{{price}}€ {{relativeCost}}€/kWh) (informative)"
+        },
+        {
+          "label": "Contract for",
+          "value": "LOCAL (informative)"
+        }
       ]
     },
     "end-of-charge": {
@@ -535,6 +565,99 @@
         "You will have to log in at least once to be able to charge your vehicle.",
         "",
         "Click on the link below to set your password."
+      ]
+    },
+    "reservation-created": {
+      "title": "Reservation Created",
+      "buttonText": "View Reservation",
+      "text": [
+        "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been created successfully."
+      ],
+      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been created successfully.",
+      "table": [
+        {
+          "label": "Charging Station",
+          "value": "{{chargingStationID}}"
+        },
+        {
+          "label": "Connector",
+          "value": "{{connectorID}}"
+        },
+        {
+          "label": "Duration",
+          "value": "{{fromDate}} - {{toDate}}"
+        },
+        {
+          "label": "Total Duration",
+          "value": "{{totalDuration}} h"
+        },
+        {
+          "label": "Expiry Date",
+          "value": "{{expiryDate}}"
+        }
+      ]
+    },
+    "reservation-cancelled": {
+      "title": "Reservation Cancelled",
+      "buttonText": "View Reservation",
+      "body": "Your reservation for the charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been cancelled successfully.",
+      "text": [
+        "Your reservation for the charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been cancelled successfully.",
+        "",
+        "For further information on your reservation, please click on the link below."
+      ]
+    },
+    "reservation-status-notification": {
+      "title": "Reservation Status Changed",
+      "buttonText": "Navigate to Reservation",
+      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' changed its status.",
+      "reservation_done": "Reservation Done",
+      "reservation_scheduled": "Reservation Scheduled",
+      "reservation_in_progress": "Reservation In Progress",
+      "reservation_cancelled": "Reservation Cancelled",
+      "reservation_expired": "Reservation Expired",
+      "text": [
+        "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' changed its status.",
+        "Status change: '{{reservationStatus}}'",
+        "",
+        "For further information on your reservation, please click on the link below."
+      ]
+    },
+    "upcoming-reservation-notification": {
+      "title": "Reservation Upcoming",
+      "buttonText": "Navigate to Reservation",
+      "body": "Your reservation on the charging station '{{chargingStationID}}' at connector '{{connectorID}}' is upcoming.",
+      "text": [
+        "Your reservation on the charging station '{{chargingStationID}}' at connector '{{connectorID}}' is upcoming.",
+        "Planned Reservation Duration: '{{fromDate}}' - '{{toDate}}'",
+        "",
+        "In case of delay or trip cancellation, please consider the following options:",
+        "- Postpone reservation",
+        "- Cancel reservation",
+        "",
+        "For adjusting your reservation. please click on the link below."
+      ]
+    },
+    "upcoming-reservation-warning": {
+      "title": "Reservation Upcoming",
+      "buttonText": "Navigate to {{tenantName}}",
+      "body": "There is a reservation upcoming from '{{fromDate}}' to '{{toDate}}' on this charging station '{{chargingStationID}}' at connector '{{connectorID}}'.",
+      "text": [
+        "There is a reservation upcoming from '{{fromDate}}' to '{{toDate}}' on this charging station '{{chargingStationID}}' at connector '{{connectorID}}'.",
+        "In case of a longer charging session, please reconsider using this charging station and relocate your car.",
+        "",
+        "For further information selecting another charging station/connector, please click on the link below."
+      ]
+    },
+    "reserved-chargingstation-blocked": {
+      "title": "Reserved Charging Station Blocked",
+      "buttonText": "Navigate to Reservation",
+      "body": "At your currently reserved charging station '{{chargingStationID}}' on connector '{{connectorID}}' a charging session started.",
+      "text": [
+        "At your currently reserved charging station '{{chargingStationID}}' on connector '{{connectorID}}' a charging session started.",
+        "If you have the possibility, please consider another charging station or connector for your reservation.",
+        "",
+        "For further information selecting another charging station/connector, please click on the link below."
       ]
     }
   }

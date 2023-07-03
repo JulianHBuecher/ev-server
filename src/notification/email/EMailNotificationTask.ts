@@ -1,4 +1,12 @@
 /* eslint-disable max-len */
+import { Message, SMTPClient } from 'emailjs';
+import rfc2047 from 'rfc2047';
+
+import BackendError from '../../exception/BackendError';
+import EmailConfiguration from '../../types/configuration/EmailConfiguration';
+import { ServerAction } from '../../types/Server';
+import Tenant from '../../types/Tenant';
+import User from '../../types/User';
 import {
   AccountVerificationNotification,
   AdminAccountVerificationNotification,
@@ -26,6 +34,7 @@ import {
   OptimalChargeReachedNotification,
   PreparingSessionNotStartedNotification,
   RequestPasswordNotification,
+  ReservationNotification,
   SessionNotStartedNotification,
   TransactionStartedNotification,
   UnknownUserBadgedNotification,
@@ -34,24 +43,16 @@ import {
   UserCreatePassword,
   VerificationEmailNotification,
 } from '../../types/UserNotifications';
-import EmailComponentManager, { EmailComponent } from './EmailComponentManager';
-import { Message, SMTPClient, SMTPError } from 'emailjs';
-
-import BackendError from '../../exception/BackendError';
 import BrandingConstants from '../../utils/BrandingConstants';
 import Configuration from '../../utils/Configuration';
 import Constants from '../../utils/Constants';
-import EmailConfiguration from '../../types/configuration/EmailConfiguration';
 import I18nManager from '../../utils/I18nManager';
 import Logging from '../../utils/Logging';
 import LoggingHelper from '../../utils/LoggingHelper';
-import NotificationTask from '../NotificationTask';
-import { ServerAction } from '../../types/Server';
-import Tenant from '../../types/Tenant';
-import User from '../../types/User';
 import Utils from '../../utils/Utils';
+import NotificationTask from '../NotificationTask';
+import EmailComponentManager, { EmailComponent } from './EmailComponentManager';
 import mjmlBuilder from './EmailMjmlBuilder';
-import rfc2047 from 'rfc2047';
 
 const MODULE_NAME = 'EMailNotificationTask';
 
@@ -544,6 +545,85 @@ export default class EMailNotificationTask implements NotificationTask {
   ): Promise<NotificationResult> {
     data.buttonUrl = data.evseDashboardCreatePasswordURL;
     return await this.prepareAndSendEmail('user-create-password', data, user, tenant, severity);
+  }
+
+  public async sendReservationStatusNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    return await this.prepareAndSendEmail(
+      'reservation-status-notification',
+      data,
+      user,
+      tenant,
+      severity
+    );
+  }
+
+  public async sendUpcomingReservationNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    const notificationType = severity === NotificationSeverity.WARNING ? 'warning' : 'notification';
+    return await this.prepareAndSendEmail(
+      `upcoming-reservation-${notificationType}`,
+      data,
+      user,
+      tenant,
+      severity
+    );
+  }
+
+  public async sendReservedChargingStationBlockedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    return await this.prepareAndSendEmail(
+      'reserved-chargingstation-blocked',
+      data,
+      user,
+      tenant,
+      severity
+    );
+  }
+
+  public async sendReservationCreatedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    const optionalComponents = [
+      await EmailComponentManager.getComponent(EmailComponent.MJML_TABLE),
+    ];
+    return await this.prepareAndSendEmail(
+      'reservation-created',
+      data,
+      user,
+      tenant,
+      severity,
+      optionalComponents
+    );
+  }
+
+  public async sendReservationCancelledNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    return await this.prepareAndSendEmail('reservation-cancelled', data, user, tenant, severity);
   }
 
   private async sendEmail(

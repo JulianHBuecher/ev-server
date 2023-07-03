@@ -1,7 +1,6 @@
-import User, { UserStatus } from './User';
-
-import ChargingStation from './ChargingStation';
 import NotificationTask from '../notification/NotificationTask';
+import ChargingStation from './ChargingStation';
+import User, { UserStatus } from './User';
 
 export default interface UserNotifications {
   sendSessionStarted: boolean;
@@ -77,6 +76,10 @@ export enum UserNotificationType {
   SESSION_NOT_STARTED_AFTER_AUTHORIZE = 'SessionNotStartedAfterAuthorize',
   END_USER_ERROR_NOTIFICATION = 'EndUserErrorNotification',
   ACCOUNT_VERIFICATION_NOTIFICATION = 'AccountVerificationNotification',
+  RESERVATION_STATUS_CHANGED_NOTIFICATION = 'ReservationStatusChangedNotification',
+  RESERVATION_UPCOMING_NOTIFICATION = 'ReservationUpcomingNotification',
+  RESERVATION_CHARGING_STATION_BLOCKED = 'ReservationChargingStationBlocked',
+  RESERVATION_CANCELLED_NOTIFICATION = 'ReservationCancelledNotification',
 }
 
 export enum NotificationSeverity {
@@ -411,4 +414,18 @@ export interface UserCreatePassword extends BaseNotification {
   tenantName: string;
   evseDashboardURL: string;
   evseDashboardCreatePasswordURL: string;
+}
+
+export interface ReservationNotification extends BaseNotification {
+  user: User;
+  tenantName?: string;
+  reservationID?: number;
+  fromDate?: string;
+  toDate?: string;
+  expiryDate?: string;
+  totalDuration?: string;
+  chargingStationID: string;
+  connectorID: string;
+  reservationStatus?: string;
+  evseDashboardReservationURL?: string;
 }

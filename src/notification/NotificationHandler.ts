@@ -1,3 +1,10 @@
+import moment from 'moment';
+
+import NotificationStorage from '../storage/mongodb/NotificationStorage';
+import UserStorage from '../storage/mongodb/UserStorage';
+import ChargingStation from '../types/ChargingStation';
+import { ServerAction } from '../types/Server';
+import Tenant from '../types/Tenant';
 import User, { UserRole } from '../types/User';
 import UserNotifications, {
   AccountVerificationNotification,
@@ -25,6 +32,7 @@ import UserNotifications, {
   OptimalChargeReachedNotification,
   PreparingSessionNotStartedNotification,
   RequestPasswordNotification,
+  ReservationNotification,
   SessionNotStartedNotification,
   TransactionStartedNotification,
   UnknownUserBadgedNotification,
@@ -33,21 +41,13 @@ import UserNotifications, {
   UserNotificationKeys,
   VerificationEmailNotification,
 } from '../types/UserNotifications';
-
-import ChargingStation from '../types/ChargingStation';
 import Configuration from '../utils/Configuration';
 import Constants from '../utils/Constants';
-import EMailNotificationTask from './email/EMailNotificationTask';
 import Logging from '../utils/Logging';
 import LoggingHelper from '../utils/LoggingHelper';
-import NotificationStorage from '../storage/mongodb/NotificationStorage';
-import RemotePushNotificationTask from './remote-push-notification/RemotePushNotificationTask';
-import { ServerAction } from '../types/Server';
-import Tenant from '../types/Tenant';
-import TenantStorage from '../storage/mongodb/TenantStorage';
-import UserStorage from '../storage/mongodb/UserStorage';
 import Utils from '../utils/Utils';
-import moment from 'moment';
+import EMailNotificationTask from './email/EMailNotificationTask';
+import RemotePushNotificationTask from './remote-push-notification/RemotePushNotificationTask';
 
 const MODULE_NAME = 'NotificationHandler';
 
@@ -1936,6 +1936,276 @@ export default class NotificationHandler {
             await Logging.logActionExceptionMessage(
               tenant.id,
               ServerAction.BILLING_ACCOUNT_ACTIVATE,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  public static async sendReservationStatusNotification(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_STATUS_TRANSITION,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendReservationStatusNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.INFO
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendReservationStatusNotification',
+                action: ServerAction.RESERVATION_STATUS_TRANSITION,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_STATUS_TRANSITION,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  public static async sendUpcomingReservationNotification(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_UPCOMING,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendUpcomingReservationNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.INFO
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendUpcomingReservationNotification',
+                action: ServerAction.RESERVATION_STATUS_TRANSITION,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_UPCOMING,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  public static async sendReservedChargingStationBlocked(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_CHARGING_STATION_BLOCKED,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendReservedChargingStationBlockedNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.WARNING
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendReservedChargingStationBlocked',
+                action: ServerAction.RESERVATION_CHARGING_STATION_BLOCKED,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_CHARGING_STATION_BLOCKED,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  public static async sendReservationCreatedNotification(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_CREATE,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendReservationCreatedNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.INFO
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendReservationCreatedNotification',
+                action: ServerAction.RESERVATION_CREATE,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_CREATE,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  public static async sendReservationCancelledNotification(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_CANCEL,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendReservationCancelledNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.INFO
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendReservationCancelledNotification',
+                action: ServerAction.RESERVATION_CANCEL,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_CANCEL,
               error
             );
           }

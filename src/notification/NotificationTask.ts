@@ -1,4 +1,7 @@
 /* eslint-disable max-len */
+
+import Tenant from '../types/Tenant';
+import User from '../types/User';
 import {
   AccountVerificationNotification,
   AdminAccountVerificationNotification,
@@ -25,6 +28,7 @@ import {
   OptimalChargeReachedNotification,
   PreparingSessionNotStartedNotification,
   RequestPasswordNotification,
+  ReservationNotification,
   SessionNotStartedNotification,
   TransactionStartedNotification,
   UnknownUserBadgedNotification,
@@ -33,9 +37,6 @@ import {
   UserCreatePassword,
   VerificationEmailNotification,
 } from '../types/UserNotifications';
-
-import Tenant from '../types/Tenant';
-import User from '../types/User';
 
 export default interface NotificationTask {
   sendEndOfCharge(
@@ -226,6 +227,36 @@ export default interface NotificationTask {
   ): Promise<NotificationResult>;
   sendVerificationEmailUserImport(
     data: VerificationEmailNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
+  sendReservationStatusNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
+  sendUpcomingReservationNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
+  sendReservationCreatedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
+  sendReservedChargingStationBlockedNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
+  sendReservationCancelledNotification(
+    data: ReservationNotification,
     user: User,
     tenant: Tenant,
     severity: NotificationSeverity

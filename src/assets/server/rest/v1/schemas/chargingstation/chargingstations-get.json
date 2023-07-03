@@ -83,6 +83,10 @@
     "Public": {
       "type": "boolean",
       "sanitize": "mongo"
+    },
+    "WithReservation": {
+      "type": "boolean",
+      "sanitize": "mongo"
     }
   },
   "required": ["Limit"]

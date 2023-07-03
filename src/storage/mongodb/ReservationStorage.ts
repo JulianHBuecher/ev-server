@@ -415,68 +415,83 @@ export default class ReservationStorage {
     });
   }
 
-  public static async cancelReservation(tenant: Tenant, reservationID: number): Promise<void> {
+  public static async updateReservationStatus(
+    tenant: Tenant,
+    reservationID: number,
+    status: ReservationStatus = ReservationStatus.CANCELLED
+  ): Promise<Reservation> {
     const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.cancelReservation.name;
+    const METHOD_NAME = this.updateReservationStatus.name;
     DatabaseUtils.checkTenantObject(tenant);
     const filters: FilterParams = {};
     filters.id = {
       $eq: reservationID,
     };
-    await global.database.getCollection<any>(tenant.id, COLLECTION_NAME).findOneAndUpdate(filters, {
-      $set: {
-        status: ReservationStatus.CANCELLED,
-      },
-    });
+    const cancelledReservation = await global.database
+      .getCollection<any>(tenant.id, COLLECTION_NAME)
+      .findOneAndUpdate(
+        filters,
+        {
+          $set: {
+            status: status,
+          },
+        },
+        { returnDocument: 'after' }
+      );
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, {
       reservationID,
     });
+    return cancelledReservation.value as Reservation;
   }
 
-  public static async getCollidingReservations(
+  public static async getReservationsByDate(
     tenant: Tenant,
-    reservation: Reservation
+    fromDate: Date,
+    toDate: Date,
+    expiryDate?: Date
   ): Promise<Reservation[]> {
     const startTime = Logging.traceDatabaseRequestStart();
-    const METHOD_NAME = this.getCollidingReservations.name;
+    const METHOD_NAME = this.getReservationsByDate.name;
     const filters: FilterParams = {};
-    filters.id = { $ne: reservation.id };
-    filters.chargingStationID = { $eq: reservation.chargingStationID };
-    filters.connectorID = { $eq: reservation.connectorID };
-    filters.status = { $in: [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED] };
-    if (reservation.fromDate || reservation.toDate || reservation.expiryDate) {
+    if (fromDate || toDate || expiryDate) {
       filters.$or = [];
-      if (reservation.fromDate) {
+      if (fromDate) {
         filters.$or.push({
           $and: [
-            { fromDate: { $gte: Utils.convertToDate(reservation.fromDate) } },
-            { fromDate: { $lte: Utils.convertToDate(reservation.toDate) } },
+            { fromDate: { $gte: Utils.convertToDate(fromDate) } },
+            { fromDate: { $lte: Utils.convertToDate(toDate) } },
           ],
         });
       }
-      if (reservation.toDate) {
+      if (toDate) {
         filters.$or.push({
           $and: [
-            { toDate: { $gte: Utils.convertToDate(reservation.fromDate) } },
-            { toDate: { $lte: Utils.convertToDate(reservation.toDate) } },
+            { toDate: { $gte: Utils.convertToDate(fromDate) } },
+            { toDate: { $lte: Utils.convertToDate(toDate) } },
           ],
         });
       }
-      if (reservation.expiryDate) {
+      if (expiryDate) {
         filters.$or.push({
           $and: [
-            { expiryDate: { $gte: Utils.convertToDate(reservation.fromDate) } },
-            { expiryDate: { $lte: Utils.convertToDate(reservation.toDate) } },
+            { expiryDate: { $gte: Utils.convertToDate(fromDate) } },
+            { expiryDate: { $lte: Utils.convertToDate(toDate) } },
           ],
         });
       }
     }
-    const collisions = (await global.database
+    const reservationsInRange = (await global.database
       .getCollection<any>(tenant.id, COLLECTION_NAME)
       .aggregate<any>([{ $match: filters }])
       .toArray()) as Reservation[];
-    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, reservation);
-    return collisions;
+    await Logging.traceDatabaseRequestEnd(
+      tenant,
+      MODULE_NAME,
+      METHOD_NAME,
+      startTime,
+      reservationsInRange
+    );
+    return reservationsInRange;
   }
 
   public static async getReservationsForUser(

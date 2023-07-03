@@ -175,6 +175,7 @@ export interface Connector extends ConnectorAuthorizationActions {
   chargePointID?: number;
   phaseAssignmentToGrid?: PhaseAssignmentToGrid;
   tariffID?: string;
+  reservationID?: number;
 }
 
 export interface PhaseAssignmentToGrid {

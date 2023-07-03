@@ -1102,15 +1102,14 @@ export default class Utils {
   public static buildRestServerTenantEmailLogoURL(tenantID: string): string {
     if (!tenantID || tenantID === Constants.DEFAULT_TENANT_ID) {
       // URL to a default eMobility logo
-      return (
-        `${Utils.buildRestServerURL(false)}/v1/util/tenants/email-logo?ts=` + new Date().getTime()
-      );
+      return `${Utils.buildRestServerURL(
+        false
+      )}/v1/util/tenants/email-logo?ts=${new Date().getTime()}`;
     }
     // URL to the tenant logo (if any) or the Open -e-mobility logo as a fallback
-    return (
-      `${Utils.buildRestServerURL(false)}/v1/util/tenants/email-logo?ID=${tenantID}&ts=` +
-      new Date().getTime()
-    );
+    return `${Utils.buildRestServerURL(
+      false
+    )}/v1/util/tenants/email-logo?ID=${tenantID}&ts=${new Date().getTime()}`;
   }
 
   public static buildEvseURL(subdomain: string = null): string {
@@ -1450,6 +1449,7 @@ export default class Utils {
     return ChargingStationEndpoint.AWS;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public static async generateQrCode(data: string): Promise<string> {
     return QRCode.toDataURL(data);
   }
@@ -2113,6 +2113,16 @@ export default class Utils {
       reservationName += `with Expiration Date ${reservation.expiryDate.toDateString()}`;
     }
     return reservationName;
+  }
+
+  public static buildEvseReservationURL(tenantSubdomain: string): string {
+    return `${Utils.buildEvseURL(tenantSubdomain)}/reservations`;
+  }
+
+  public static calculateReservationDuration(reservation: Reservation) {
+    const hours = moment(reservation.toDate).diff(reservation.fromDate, 'hours');
+    const minutes = moment(moment(reservation.toDate).diff(reservation.fromDate));
+    return `${hours} h ${minutes.format('mm')} min`;
   }
 
   private static hashCode(s: string): number {

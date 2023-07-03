@@ -1,4 +1,16 @@
 /* eslint-disable @typescript-eslint/member-ordering */
+import moment from 'moment';
+
+import EMailNotificationTask from '../notification/email/EMailNotificationTask';
+import RemotePushNotificationTask from '../notification/remote-push-notification/RemotePushNotificationTask';
+import RawNotificationStorage from '../storage/mongodb/RawNotificationStorage';
+import UserStorage from '../storage/mongodb/UserStorage';
+import ChargingStation from '../types/ChargingStation';
+import Reservation from '../types/Reservation';
+import { ServerAction } from '../types/Server';
+import Tenant from '../types/Tenant';
+import Transaction from '../types/Transaction';
+import User, { UserRole } from '../types/User';
 import {
   ChargingStationRegisteredNotification,
   EndOfChargeNotification,
@@ -7,24 +19,14 @@ import {
   NotificationSeverity,
   NotificationSource,
   OptimalChargeReachedNotification,
+  ReservationNotification,
   TransactionStartedNotification,
 } from '../types/UserNotifications';
-import User, { UserRole } from '../types/User';
-
-import ChargingStation from '../types/ChargingStation';
 import Configuration from './Configuration';
 import Constants from './Constants';
-import EMailNotificationTask from '../notification/email/EMailNotificationTask';
 import I18nManager from './I18nManager';
 import Logging from './Logging';
-import RawNotificationStorage from '../storage/mongodb/RawNotificationStorage';
-import RemotePushNotificationTask from '../notification/remote-push-notification/RemotePushNotificationTask';
-import { ServerAction } from '../types/Server';
-import Tenant from '../types/Tenant';
-import Transaction from '../types/Transaction';
-import UserStorage from '../storage/mongodb/UserStorage';
 import Utils from './Utils';
-import moment from 'moment';
 
 // const MODULE_NAME = 'NotificationHelper';
 
@@ -115,6 +117,64 @@ export default class NotificationHelper {
         tenant,
         chargingStation
       ).notifyChargingStationRegistered();
+    }, 500);
+  }
+
+  public static notifyReservationStatusChanged(
+    tenant: Tenant,
+    user: User,
+    reservation: Reservation
+  ) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservationStatusChanged();
+    }, 500);
+  }
+
+  public static notifyReservationUpcoming(tenant: Tenant, user: User, reservation: Reservation) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservationUpcoming();
+    }, 500);
+  }
+
+  public static notifyReservedChargingStationBlocked(
+    tenant: Tenant,
+    user: User,
+    reservation: Reservation
+  ) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservedChargingStationBlocked();
+    }, 500);
+  }
+
+  public static notifyReservationCreated(tenant: Tenant, user: User, reservation: Reservation) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservationCreated();
+    }, 500);
+  }
+
+  public static notifyReservationCancelled(tenant: Tenant, user: User, reservation: Reservation) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservationCancelled();
     }, 500);
   }
 
@@ -254,9 +314,15 @@ export default class NotificationHelper {
     }
     return [];
   }
-}
 
-// TODO: Implement Notifications for Reservation regarding purposes
+  private static getReservationNotificationHelper(
+    tenant: Tenant,
+    user: User,
+    reservation: Reservation
+  ): ReservationNotificationHelper {
+    return new ReservationNotificationHelper(tenant, user, reservation);
+  }
+}
 
 export class ChargerNotificationHelper extends NotificationHelper {
   // TODO - rethink that part!
@@ -560,6 +626,177 @@ export class SessionNotificationHelper extends ChargerNotificationHelper {
     return (
       moment.duration(totalInactivitySecs, 's').format(`h[${i18nHourShort}]mm`, { trim: false }) +
       ` (${totalInactivityPercent})`
+    );
+  }
+}
+
+class ReservationNotificationHelper extends NotificationHelper {
+  private reservation: Reservation;
+  private user: User;
+  protected tenant: Tenant;
+
+  public constructor(tenant: Tenant, user: User, reservation: Reservation) {
+    super(tenant);
+    this.user = user;
+    this.reservation = reservation;
+  }
+
+  public notifyReservationUpcoming() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    const severity =
+      this.user.id !== reservation.tag.userID
+        ? NotificationSeverity.WARNING
+        : NotificationSeverity.INFO;
+    // Get the i18n lib
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    const data: ReservationNotification = {
+      user: user,
+      tenantName: tenant.id,
+      fromDate: i18nManager.formatDateTime(reservation.fromDate),
+      toDate: i18nManager.formatDateTime(reservation.toDate),
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      reservationStatus: `reservation-status-notification.${reservation.status}`,
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    this.notifyUserOnlyOnce(
+      ServerAction.RESERVATION_UPCOMING,
+      `rx-${reservation.id}`,
+      {
+        userID: user.id,
+        reservationID: reservation.id,
+      },
+      (channel: NotificationSource) => {
+        channel.notificationTask
+          .sendUpcomingReservationNotification(data, user, tenant, severity)
+          .catch((error) => {
+            Logging.logPromiseError(error, tenant?.id);
+          });
+      }
+    );
+  }
+
+  public notifyReservationStatusChanged() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    // Get the i18n lib
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Notification data
+    const data: ReservationNotification = {
+      user: user,
+      tenantName: tenant.id,
+      fromDate: i18nManager.formatDateTime(reservation.fromDate),
+      toDate: i18nManager.formatDateTime(reservation.toDate),
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      reservationStatus: `reservation-status-notification.${reservation.status}`,
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    // Do it
+    NotificationHelper.notifySingleUser((channel: NotificationSource) => {
+      channel.notificationTask
+        .sendReservationStatusNotification(data, user, tenant, NotificationSeverity.INFO)
+        .catch((error) => {
+          Logging.logPromiseError(error, tenant?.id);
+        });
+    });
+  }
+
+  public notifyReservedChargingStationBlocked() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    // Notification data
+    const data: ReservationNotification = {
+      user: user,
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    this.notifyUserOnlyOnce(
+      ServerAction.RESERVATION_CHARGING_STATION_BLOCKED,
+      `rx-${reservation.id}`,
+      {
+        userID: user.id,
+        reservationID: reservation.id,
+      },
+      (channel: NotificationSource) => {
+        channel.notificationTask
+          .sendReservedChargingStationBlockedNotification(
+            data,
+            user,
+            tenant,
+            NotificationSeverity.WARNING
+          )
+          .catch((error) => {
+            Logging.logPromiseError(error, tenant?.id);
+          });
+      }
+    );
+  }
+
+  public notifyReservationCreated() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    // Get the i18n lib
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Notification data
+    const data: ReservationNotification = {
+      user: user,
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      fromDate: i18nManager.formatDateTime(reservation.fromDate, 'DD.MM.YY hh:mm'),
+      toDate: i18nManager.formatDateTime(reservation.toDate, 'DD.MM.YY hh:mm'),
+      totalDuration: Utils.calculateReservationDuration(reservation),
+      expiryDate: i18nManager.formatDateTime(reservation.expiryDate),
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    this.notifyUserOnlyOnce(
+      ServerAction.RESERVATION_CREATE,
+      `rx-${reservation.id}`,
+      {
+        userID: user.id,
+        reservationID: reservation.id,
+      },
+      (channel: NotificationSource) => {
+        channel.notificationTask
+          .sendReservationCreatedNotification(data, user, tenant, NotificationSeverity.INFO)
+          .catch((error) => {
+            Logging.logPromiseError(error, tenant?.id);
+          });
+      }
+    );
+  }
+
+  public notifyReservationCancelled() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    // Notification data
+    const data: ReservationNotification = {
+      user: user,
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    this.notifyUserOnlyOnce(
+      ServerAction.RESERVATION_UPCOMING,
+      `rx-${reservation.id}`,
+      {
+        userID: user.id,
+        reservationID: reservation.id,
+      },
+      (channel: NotificationSource) => {
+        channel.notificationTask
+          .sendReservationCancelledNotification(data, user, tenant, NotificationSeverity.INFO)
+          .catch((error) => {
+            Logging.logPromiseError(error, tenant?.id);
+          });
+      }
     );
   }
 }

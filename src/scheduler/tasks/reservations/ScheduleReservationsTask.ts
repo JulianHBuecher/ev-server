@@ -12,6 +12,7 @@ import { TaskConfig } from '../../../types/TaskConfig';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
 import Constants from '../../../utils/Constants';
 import Logging from '../../../utils/Logging';
+import NotificationHelper from '../../../utils/NotificationHelper';
 import Utils from '../../../utils/Utils';
 import TenantSchedulerTask from '../../TenantSchedulerTask';
 
@@ -41,6 +42,8 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           tenant,
           {
             withChargingStation: true,
+            withTag: true,
+            withUser: true,
             dateRange: { fromDate: moment().toDate(), toDate: moment().add(5, 'minutes').toDate() },
             statuses: [ReservationStatus.SCHEDULED],
           },
@@ -70,6 +73,11 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
               parentIdTag: reservation.parentIdTag ?? '',
             });
             if (response.status === OCPPReservationStatus.ACCEPTED) {
+              NotificationHelper.notifyReservationStatusChanged(
+                tenant,
+                reservation.tag.user,
+                reservation
+              );
               await ReservationStorage.saveReservation(tenant, reservation);
             }
           }
