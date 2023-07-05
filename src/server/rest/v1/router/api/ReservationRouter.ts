@@ -120,7 +120,7 @@ export default class ReservationRouter {
     this.router.put(
       `/${RESTServerRoute.REST_RESERVATION_CANCEL}`,
       (req: Request, res: Response, next: NextFunction) => {
-        req.query.ID = req.params.id;
+        req.body.ID = req.params.id;
         void RouterUtils.handleRestServerAction(
           ReservationService.handleCancelReservation.bind(this),
           ServerAction.RESERVATION_CANCEL,

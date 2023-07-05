@@ -18,6 +18,7 @@ import {
   OCPPReservationStatus,
   OCPPReserveNowResponse,
 } from '../../../../types/ocpp/OCPPClient';
+import { ChargePointStatus } from '../../../../types/ocpp/OCPPServer';
 import {
   HttpReservationCancelRequest,
   HttpReservationCreateRequest,
@@ -188,7 +189,7 @@ export default class ReservationService {
       ReservationService.handleCancelReservation.name
     );
     const filteredRequest = ReservationValidatorRest.getInstance().validateReservationCancelReq(
-      req.query
+      req.body
     );
     const reservation = await ReservationService.cancelReservation(
       req,
@@ -241,6 +242,7 @@ export default class ReservationService {
     const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
     const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
     connector.currentUserID = user.id;
+    connector.status = ChargePointStatus.RESERVED;
     connector.currentTagID = reservation.idTag;
     connector.reservationID = reservation.id;
     if (saveConnector) {
@@ -259,10 +261,10 @@ export default class ReservationService {
     saveConnector = false
   ): Promise<Connector> {
     const connector = Utils.getConnectorFromID(chargingStation, connectorID);
-    // connector.status = ChargePointStatus.AVAILABLE;
     connector.currentUserID = null;
     connector.currentTagID = null;
     connector.reservationID = null;
+    connector.status = ChargePointStatus.AVAILABLE;
     connector['reservation'] = null;
     if (saveConnector) {
       await ChargingStationStorage.saveChargingStationConnectors(

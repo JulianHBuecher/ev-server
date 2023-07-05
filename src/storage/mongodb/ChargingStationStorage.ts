@@ -466,7 +466,7 @@ export default class ChargingStationStorage {
           tenantID: tenant.id,
           aggregation: aggregation,
           localField: 'connectors.reservationID',
-          foreignField: 'id',
+          foreignField: '_id',
           asField: 'connectors.reservation',
           oneToOneCardinality: true,
         }

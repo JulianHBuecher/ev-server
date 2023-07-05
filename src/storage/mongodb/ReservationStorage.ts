@@ -1,7 +1,5 @@
-import { ModifyResult, ObjectId, Sort } from 'mongodb';
+import { Sort } from 'mongodb';
 
-import LoggingDatabaseTableCleanupTask from '../../scheduler/tasks/LoggingDatabaseTableCleanupTask';
-import ChargingStation from '../../types/ChargingStation';
 import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { FilterParams } from '../../types/GlobalType';
@@ -58,15 +56,13 @@ export default class ReservationStorage {
     if (params.search) {
       filters.$or = [];
       filters.$or.push(
-        // TODO: Determine seach options
-        { id: { $regex: params.search, $options: 'i' } },
-        { 'chargingStation.id': { $regex: params.search, $options: 'i' } },
+        { _id: { $regex: params.search, $options: 'i' } },
         { type: { $regex: params.search, $options: 'i' } },
         { status: { $regex: params.search, $options: 'i' } }
       );
     }
     if (!Utils.isEmptyArray(params.reservationIDs)) {
-      filters.id = {
+      filters._id = {
         $in: params.reservationIDs.map((reservationID) => Utils.convertToInt(reservationID)),
       };
     }
@@ -89,7 +85,10 @@ export default class ReservationStorage {
         $in: params.types.map((t) => t),
       };
     }
-    if (params.dateRange) {
+    if (
+      !Utils.isNullOrUndefined(params.dateRange?.fromDate) ||
+      !Utils.isNullOrUndefined(params.dateRange?.toDate)
+    ) {
       const dateRange = [
         {
           $and: [
@@ -281,6 +280,8 @@ export default class ReservationStorage {
       dbParams.limit = 1;
     }
 
+    // Change ID
+    DatabaseUtils.pushRenameDatabaseIDToNumber(aggregation);
     // Convert Object ID to string
     DatabaseUtils.pushConvertObjectIDToString(aggregation, 'carID');
     // Convert Object ID to string
@@ -357,14 +358,23 @@ export default class ReservationStorage {
     const reservation =
       ReservationValidatorStorage.getInstance().validateReservation(reservationToSave);
     const reservationMDB = {
-      ...reservation,
+      _id: reservation.id,
+      chargingStationID: reservation.chargingStationID,
+      connectorID: reservation.connectorID,
+      fromDate: reservation.fromDate,
+      toDate: reservation.toDate,
+      expiryDate: reservation.expiryDate,
+      idTag: reservation.idTag,
+      parentIdTag: reservation.parentIdTag,
       carID: reservation.carID ? DatabaseUtils.convertToObjectID(reservation.carID) : null,
+      type: reservation.type,
+      status: reservation.status,
     };
     DatabaseUtils.addLastChangedCreatedProps(reservationMDB, reservationToSave);
     const createdReservation = await global.database
       .getCollection<any>(tenant.id, COLLECTION_NAME)
       .findOneAndUpdate(
-        { id: reservationMDB.id },
+        { _id: reservationMDB._id },
         {
           $set: reservationMDB,
         },
@@ -377,7 +387,7 @@ export default class ReservationStorage {
       startTime,
       createdReservation
     );
-    return createdReservation.value as Reservation;
+    return { id: createdReservation.value._id, ...createdReservation.value } as Reservation;
   }
 
   public static async saveReservations(
@@ -405,8 +415,8 @@ export default class ReservationStorage {
     const METHOD_NAME = this.deleteReservation.name;
     DatabaseUtils.checkTenantObject(tenant);
     await global.database
-      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .deleteOne({ id: reservationID });
+      .getCollection<any>(tenant.id, COLLECTION_NAME)
+      .deleteOne({ _id: reservationID });
     await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, METHOD_NAME, startTime, {
       reservationID,
     });
@@ -421,7 +431,7 @@ export default class ReservationStorage {
     const METHOD_NAME = this.updateReservationStatus.name;
     DatabaseUtils.checkTenantObject(tenant);
     const filters: FilterParams = {};
-    filters.id = {
+    filters._id = {
       $eq: reservationID,
     };
     const cancelledReservation = await global.database
@@ -449,7 +459,6 @@ export default class ReservationStorage {
   ): Promise<Reservation[]> {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getReservationsByDate.name;
-    const filters: FilterParams = {};
     const reservationsInRange = await ReservationStorage.getReservations(
       tenant,
       {
@@ -457,37 +466,6 @@ export default class ReservationStorage {
       },
       Constants.DB_PARAMS_MAX_LIMIT
     );
-    // if (fromDate || toDate || expiryDate) {
-    //   filters.$or = [];
-    //   if (fromDate) {
-    //     filters.$or.push({
-    //       $and: [
-    //         { fromDate: { $gte: Utils.convertToDate(fromDate) } },
-    //         { fromDate: { $lte: Utils.convertToDate(toDate) } },
-    //       ],
-    //     });
-    //   }
-    //   if (toDate) {
-    //     filters.$or.push({
-    //       $and: [
-    //         { toDate: { $gte: Utils.convertToDate(fromDate) } },
-    //         { toDate: { $lte: Utils.convertToDate(toDate) } },
-    //       ],
-    //     });
-    //   }
-    //   if (expiryDate) {
-    //     filters.$or.push({
-    //       $and: [
-    //         { expiryDate: { $gte: Utils.convertToDate(fromDate) } },
-    //         { expiryDate: { $lte: Utils.convertToDate(toDate) } },
-    //       ],
-    //     });
-    //   }
-    // }
-    // const reservationsInRange = (await global.database
-    //   .getCollection<any>(tenant.id, COLLECTION_NAME)
-    //   .aggregate<any>([{ $match: filters }])
-    //   .toArray()) as Reservation[];
     await Logging.traceDatabaseRequestEnd(
       tenant,
       MODULE_NAME,

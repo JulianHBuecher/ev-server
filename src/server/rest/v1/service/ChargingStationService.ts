@@ -1698,8 +1698,15 @@ export default class ChargingStationService {
         issuer: filteredRequest.Issuer,
         withSite: filteredRequest.WithSite,
         withSiteArea: filteredRequest.WithSiteArea,
+        ...authorizations.filters,
       },
-      Constants.DB_PARAMS_MAX_LIMIT
+      {
+        limit: filteredRequest.Limit,
+        skip: filteredRequest.Skip,
+        sort: UtilsService.httpSortFieldsToMongoDB(filteredRequest.SortFields),
+        onlyRecordCount: filteredRequest.OnlyRecordCount,
+      },
+      authorizations.projectFields
     );
     const filteredStations = chargingStations.result.filter(
       (chargingStation) =>

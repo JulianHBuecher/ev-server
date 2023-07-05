@@ -1,15 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 
+import ChargingStationTemplateStorage from '../../../../storage/mongodb/ChargingStationTemplateStorage';
 import { Action } from '../../../../types/Authorization';
-import AuthorizationService from './AuthorizationService';
 import { ChargingStationTemplate } from '../../../../types/ChargingStation';
 import { ChargingStationTemplateDataResult } from '../../../../types/DataResult';
-import ChargingStationTemplateStorage from '../../../../storage/mongodb/ChargingStationTemplateStorage';
-import ChargingStationTemplateValidator from '../validator/ChargingStationTemplateValidatorRest';
+import { ServerAction } from '../../../../types/Server';
 import Constants from '../../../../utils/Constants';
 import Logging from '../../../../utils/Logging';
-import { ServerAction } from '../../../../types/Server';
-import Utils from '../../../../utils/Utils';
+import ChargingStationTemplateValidator from '../validator/ChargingStationTemplateValidatorRest';
+import AuthorizationService from './AuthorizationService';
 import UtilsService from './UtilsService';
 
 const MODULE_NAME = 'ChargingStationTemplateService';
