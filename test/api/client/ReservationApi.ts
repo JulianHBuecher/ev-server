@@ -50,7 +50,7 @@ export default class ReservationApi extends CrudApi {
   public async cancelReservation(id: number, chargingStationID: string, connectorID: number) {
     return super.update(
       { args: { chargingStationID: chargingStationID, connectorID: connectorID } },
-      this.buildRestEndpointUrl(RESTServerRoute.REST_RESERVATIONS_CANCEL, {
+      this.buildRestEndpointUrl(RESTServerRoute.REST_RESERVATION_CANCEL, {
         id: id,
       })
     );

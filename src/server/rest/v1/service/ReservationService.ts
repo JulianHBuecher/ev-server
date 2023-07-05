@@ -9,7 +9,7 @@ import ChargingStationStorage from '../../../../storage/mongodb/ChargingStationS
 import ReservationStorage from '../../../../storage/mongodb/ReservationStorage';
 import UserStorage from '../../../../storage/mongodb/UserStorage';
 import { Action, Entity } from '../../../../types/Authorization';
-import ChargingStation from '../../../../types/ChargingStation';
+import ChargingStation, { Connector } from '../../../../types/ChargingStation';
 import { ReservationDataResult } from '../../../../types/DataResult';
 import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import {
@@ -257,18 +257,73 @@ export default class ReservationService {
     chargingStation: ChargingStation,
     connectorID: number,
     saveConnector = false
-  ) {
+  ): Promise<Connector> {
     const connector = Utils.getConnectorFromID(chargingStation, connectorID);
     // connector.status = ChargePointStatus.AVAILABLE;
     connector.currentUserID = null;
     connector.currentTagID = null;
     connector.reservationID = null;
+    connector['reservation'] = null;
     if (saveConnector) {
       await ChargingStationStorage.saveChargingStationConnectors(
         tenant,
         chargingStation.id,
         chargingStation.connectors
       );
+    }
+    return connector;
+  }
+
+  public static async checkForReservationCollisions(
+    tenant: Tenant,
+    reservation: Partial<Reservation>
+  ): Promise<Reservation[]> {
+    const reservationsInRange = await ReservationStorage.getReservationsByDate(
+      tenant,
+      reservation.fromDate,
+      reservation.toDate
+    );
+    const collisions = reservationsInRange.filter(
+      (r) =>
+        r.id !== reservation.id &&
+        r.chargingStationID === reservation.chargingStationID &&
+        r.connectorID === reservation.connectorID &&
+        [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED].includes(r.status)
+    );
+    if (collisions.length > 0) {
+      throw new AppError({
+        action: ServerAction.RESERVATION_CREATE,
+        module: MODULE_NAME,
+        method: ReservationService.checkForReservationCollisions.name,
+        errorCode: HTTPError.RESERVATION_COLLISION_ERROR,
+        message: `Unable to create reservation, because of collision with '${collisions.length} reservations'`,
+      });
+    }
+    return collisions;
+  }
+
+  public static async preventMultipleReserveNow(
+    tenant: Tenant,
+    reservationID: number,
+    userID: string
+  ) {
+    let existingReservations = await ReservationStorage.getReservationsForUser(
+      tenant,
+      userID,
+      ReservationType.RESERVE_NOW,
+      ReservationStatusEnum.IN_PROGRESS
+    );
+    existingReservations = existingReservations.filter(
+      (reservation) => reservation.id !== reservationID
+    );
+    if (existingReservations.length > 0) {
+      throw new AppError({
+        action: ServerAction.RESERVATION_CREATE,
+        module: MODULE_NAME,
+        method: ReservationService.preventMultipleReserveNow.name,
+        errorCode: HTTPError.RESERVATION_MULTIPLE_RESERVE_NOW_ERROR,
+        message: `Unable to create reservation, because 'RESERVE NOW' reservation for user '${userID}' already exists`,
+      });
     }
   }
 
@@ -462,9 +517,17 @@ export default class ReservationService {
         message: 'Unable to create reservation, reservation with same ID exists for another user',
       });
     }
-    const reservationOnCS = Utils.getConnectorFromID(chargingStation, filteredRequest.connectorID)[
-      'reservation'
-    ] as Reservation;
+    let connector = Utils.getConnectorFromID(chargingStation, filteredRequest.connectorID);
+    // Handle uncompleted clean up process
+    if (connector['reservation']?.status === ReservationStatus.EXPIRED) {
+      connector = await ReservationService.resetConnectorReservation(
+        req.tenant,
+        chargingStation,
+        connector.connectorId,
+        true
+      );
+    }
+    const reservationOnCS = connector['reservation'] as Reservation;
     if (!Utils.isNullOrUndefined(reservationOnCS) && reservationOnCS.id !== filteredRequest.id) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
@@ -491,6 +554,9 @@ export default class ReservationService {
       reservation
     );
     if (reservation) {
+      if (Utils.isNullOrUndefined(reservationToSave.status)) {
+        reservationToSave.status = ReservationService.determineReservationStatus(reservation);
+      }
       ReservationService.checkReservationStatusTransition(reservation, reservationToSave.status);
       if (reservation.chargingStationID !== reservationToSave.chargingStationID) {
         await ReservationService.contactChargingStation(
@@ -502,9 +568,13 @@ export default class ReservationService {
     } else {
       reservationToSave.status = ReservationService.determineReservationStatus(reservationToSave);
     }
-    await ReservationService.checkForReservationCollisions(req, reservationToSave);
+    await ReservationService.checkForReservationCollisions(req.tenant, reservationToSave);
     if (reservationToSave.type === ReservationType.RESERVE_NOW) {
-      await ReservationService.preventMultipleReserveNow(req, filteredRequest);
+      await ReservationService.preventMultipleReserveNow(
+        req.tenant,
+        filteredRequest.id,
+        filteredRequest.userID
+      );
     }
     const response = await ReservationService.contactChargingStation(
       req,
@@ -548,7 +618,7 @@ export default class ReservationService {
       req.user
     );
     const reservation = await ReservationService.getReservation(req, filteredRequest);
-    if ([ReservationStatus.IN_PROGRESS].includes(reservation.status)) {
+    if ([ReservationStatus.IN_PROGRESS, null].includes(reservation.status)) {
       const result = await ReservationService.contactChargingStation(req, action, reservation);
       if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
         return;
@@ -795,57 +865,5 @@ export default class ReservationService {
       reservation.createdOn = new Date();
     }
     return reservation;
-  }
-
-  private static async checkForReservationCollisions(
-    req: Request,
-    reservation: Reservation
-  ): Promise<Reservation[]> {
-    const reservationsInRange = await ReservationStorage.getReservationsByDate(
-      req.tenant,
-      reservation.fromDate,
-      reservation.toDate
-    );
-    const collisions = reservationsInRange.filter(
-      (r) =>
-        r.id !== reservation.id &&
-        r.chargingStationID === reservation.chargingStationID &&
-        r.connectorID === reservation.connectorID &&
-        [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED].includes(r.status)
-    );
-    if (collisions.length > 0) {
-      throw new AppError({
-        action: ServerAction.RESERVATION_CREATE,
-        module: MODULE_NAME,
-        method: ReservationService.checkForReservationCollisions.name,
-        errorCode: HTTPError.RESERVATION_COLLISION_ERROR,
-        message: `Unable to create reservation, because of collision with '${collisions.length} reservations'`,
-      });
-    }
-    return collisions;
-  }
-
-  private static async preventMultipleReserveNow(
-    req: Request,
-    filteredRequest: HttpReservationCreateRequest | HttpReservationUpdateRequest
-  ) {
-    let existingReservations = await ReservationStorage.getReservationsForUser(
-      req.tenant,
-      filteredRequest.userID,
-      ReservationType.RESERVE_NOW,
-      ReservationStatusEnum.IN_PROGRESS
-    );
-    existingReservations = existingReservations.filter(
-      (reservation) => reservation.id !== filteredRequest.id
-    );
-    if (existingReservations.length > 0) {
-      throw new AppError({
-        action: ServerAction.RESERVATION_CREATE,
-        module: MODULE_NAME,
-        method: ReservationService.preventMultipleReserveNow.name,
-        errorCode: HTTPError.RESERVATION_MULTIPLE_RESERVE_NOW_ERROR,
-        message: `Unable to create reservation, because 'RESERVE NOW' reservation for user '${filteredRequest.userID}' already exists`,
-      });
-    }
   }
 }

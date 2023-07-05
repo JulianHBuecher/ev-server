@@ -2953,6 +2953,19 @@ export default class ChargingStationService {
   ): Promise<void> {
     const user = await UserStorage.getUserByTagID(tenant, reserveNow.idTag);
     if (Utils.isComponentActiveFromToken(currentUser, TenantComponents.RESERVATION)) {
+      const actualDate = new Date();
+      await ReservationService.checkForReservationCollisions(tenant, {
+        id: reserveNow.reservationId,
+        chargingStationID: chargingStation.id,
+        connectorID: reserveNow.connectorId,
+        fromDate: actualDate,
+        toDate: reserveNow.expiryDate,
+      });
+      await ReservationService.preventMultipleReserveNow(
+        tenant,
+        reserveNow.reservationId,
+        currentUser.id
+      );
       const reservation = await ReservationStorage.saveReservation(tenant, {
         id: reserveNow.reservationId,
         chargingStationID: chargingStation.id,
