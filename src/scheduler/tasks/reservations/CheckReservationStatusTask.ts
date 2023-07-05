@@ -1,6 +1,7 @@
 import moment from 'moment';
 
 import LockingManager from '../../../locking/LockingManager';
+import ReservationService from '../../../server/rest/v1/service/ReservationService';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
 import { LockEntity } from '../../../types/Locking';
 import Reservation, { ReservationStatus } from '../../../types/Reservation';
@@ -50,6 +51,11 @@ export default class CheckReservationStatusTask extends TenantSchedulerTask {
           const reservationsToUpdate: Reservation[] = [];
           for (const reservation of expiredReservations.result) {
             reservation.status = ReservationStatus.EXPIRED;
+            await ReservationService.resetConnectorReservation(
+              tenant,
+              reservation.chargingStation,
+              reservation.connectorID
+            );
             NotificationHelper.notifyReservationStatusChanged(
               tenant,
               reservation.tag.user,

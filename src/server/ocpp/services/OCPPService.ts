@@ -83,7 +83,6 @@ import {
 import { ReservationStatus, ReservationType } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import SiteArea from '../../../types/SiteArea';
-import Tag from '../../../types/Tag';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
 import Transaction, { InactivityStatus, TransactionAction } from '../../../types/Transaction';
 import User from '../../../types/User';
@@ -674,7 +673,7 @@ export default class OCPPService {
       // Save
       await ChargingStationStorage.saveChargingStation(tenant, chargingStation);
       // Reservation Handling
-      await this.processReservationInStartTransaction(tenant, user, tag, startTransaction);
+      await this.processReservationInStartTransaction(tenant, user, startTransaction);
       NotificationHelper.notifyStartTransaction(tenant, newTransaction, chargingStation, user);
       await Logging.logInfo({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
@@ -2928,7 +2927,6 @@ export default class OCPPService {
   private async processReservationInStartTransaction(
     tenant: Tenant,
     user: User,
-    tag: Tag,
     transaction: OCPPStartTransactionRequestExtended
   ) {
     if (!transaction.reservationId) {

@@ -2,6 +2,7 @@ import moment from 'moment';
 
 import ChargingStationClientFactory from '../../../client/ocpp/ChargingStationClientFactory';
 import LockingManager from '../../../locking/LockingManager';
+import ReservationService from '../../../server/rest/v1/service/ReservationService';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
 import { LockEntity } from '../../../types/Locking';
 import { OCPPReservationStatus } from '../../../types/ocpp/OCPPClient';
@@ -77,6 +78,12 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
                 tenant,
                 reservation.tag.user,
                 reservation
+              );
+              await ReservationService.updateConnectorWithReservation(
+                tenant,
+                reservation.chargingStation,
+                reservation,
+                true
               );
               await ReservationStorage.saveReservation(tenant, reservation);
             }

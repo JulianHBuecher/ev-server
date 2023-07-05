@@ -519,7 +519,11 @@ export default class ReservationService {
     }
     let connector = Utils.getConnectorFromID(chargingStation, filteredRequest.connectorID);
     // Handle uncompleted clean up process
-    if (connector['reservation']?.status === ReservationStatus.EXPIRED) {
+    if (
+      ![ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED].includes(
+        connector['reservation']?.status
+      )
+    ) {
       connector = await ReservationService.resetConnectorReservation(
         req.tenant,
         chargingStation,
