@@ -232,6 +232,46 @@ export default class ReservationService {
     // TODO: Impl
   }
 
+  public static async updateConnectorWithReservation(
+    tenant: Tenant,
+    chargingStation: ChargingStation,
+    reservation: Partial<Reservation>,
+    saveConnector = false
+  ) {
+    const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
+    const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
+    connector.currentUserID = user.id;
+    connector.currentTagID = reservation.idTag;
+    connector.reservationID = reservation.id;
+    if (saveConnector) {
+      await ChargingStationStorage.saveChargingStationConnectors(
+        tenant,
+        chargingStation.id,
+        chargingStation.connectors
+      );
+    }
+  }
+
+  public static async resetConnectorReservation(
+    tenant: Tenant,
+    chargingStation: ChargingStation,
+    connectorID: number,
+    saveConnector = false
+  ) {
+    const connector = Utils.getConnectorFromID(chargingStation, connectorID);
+    // connector.status = ChargePointStatus.AVAILABLE;
+    connector.currentUserID = null;
+    connector.currentTagID = null;
+    connector.reservationID = null;
+    if (saveConnector) {
+      await ChargingStationStorage.saveChargingStationConnectors(
+        tenant,
+        chargingStation.id,
+        chargingStation.connectors
+      );
+    }
+  }
+
   protected static checkReservationStatusTransition(
     reservation: Reservation,
     status: ReservationStatusEnum
@@ -405,9 +445,14 @@ export default class ReservationService {
     const reservation = await ReservationStorage.getReservation(req.tenant, filteredRequest.id, {
       withTag: true,
     });
+    const chargingStation = await ChargingStationStorage.getChargingStation(
+      req.tenant,
+      filteredRequest.chargingStationID,
+      { withReservation: true }
+    );
     if (
       !Utils.isNullOrUndefined(reservation) &&
-      reservation?.tag.userID !== filteredRequest.userID
+      reservation?.tag.visualID !== filteredRequest.visualTagID
     ) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
@@ -415,6 +460,18 @@ export default class ReservationService {
         method: ReservationService.saveReservation.name,
         errorCode: HTTPError.RESERVATION_ALREADY_EXISTS_ERROR,
         message: 'Unable to create reservation, reservation with same ID exists for another user',
+      });
+    }
+    const reservationOnCS = Utils.getConnectorFromID(chargingStation, filteredRequest.connectorID)[
+      'reservation'
+    ] as Reservation;
+    if (!Utils.isNullOrUndefined(reservationOnCS) && reservationOnCS.id !== filteredRequest.id) {
+      throw new AppError({
+        action: ServerAction.RESERVATION_CREATE,
+        module: MODULE_NAME,
+        method: ReservationService.saveReservation.name,
+        errorCode: HTTPError.RESERVATION_OCCUPIED_ERROR,
+        message: 'Unable to create reservation, connector has already a reservation ongoing',
       });
     }
     if (!filteredRequest.idTag) {
@@ -427,9 +484,21 @@ export default class ReservationService {
       );
       filteredRequest.idTag = tag.id;
     }
-    const reservationToSave = this.buildReservation(req, action, filteredRequest, reservation);
+    const reservationToSave = ReservationService.buildReservation(
+      req,
+      action,
+      filteredRequest,
+      reservation
+    );
     if (reservation) {
       ReservationService.checkReservationStatusTransition(reservation, reservationToSave.status);
+      if (reservation.chargingStationID !== reservationToSave.chargingStationID) {
+        await ReservationService.contactChargingStation(
+          req,
+          ServerAction.RESERVATION_CANCEL,
+          reservation
+        );
+      }
     } else {
       reservationToSave.status = ReservationService.determineReservationStatus(reservationToSave);
     }
@@ -437,9 +506,13 @@ export default class ReservationService {
     if (reservationToSave.type === ReservationType.RESERVE_NOW) {
       await ReservationService.preventMultipleReserveNow(req, filteredRequest);
     }
-    const result = await ReservationService.contactChargingStation(req, action, reservationToSave);
-    if (!Utils.isNullOrUndefined(result)) {
-      ReservationService.handleReservationResponses(result, reservationToSave);
+    const response = await ReservationService.contactChargingStation(
+      req,
+      action,
+      reservationToSave
+    );
+    if (!Utils.isNullOrUndefined(response)) {
+      ReservationService.handleReservationResponses(response, reservationToSave);
     }
     await Logging.logInfo({
       ...LoggingHelper.getReservationProperties(reservationToSave),
@@ -476,7 +549,7 @@ export default class ReservationService {
     );
     const reservation = await ReservationService.getReservation(req, filteredRequest);
     if ([ReservationStatus.IN_PROGRESS].includes(reservation.status)) {
-      const result = await this.contactChargingStation(req, action, reservation);
+      const result = await ReservationService.contactChargingStation(req, action, reservation);
       if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
         return;
       }
@@ -510,7 +583,7 @@ export default class ReservationService {
       ReservationStatusEnum.CANCELLED
     );
     if (reservation.status === ReservationStatus.IN_PROGRESS) {
-      const result = await this.contactChargingStation(req, action, reservation);
+      const result = await ReservationService.contactChargingStation(req, action, reservation);
       if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
         return;
       }
@@ -573,7 +646,7 @@ export default class ReservationService {
           reservation,
           true
         );
-        return chargingStationClient.reserveNow({
+        return await chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
           expiryDate: reservation.expiryDate,
           idTag: reservation.idTag,
@@ -581,13 +654,20 @@ export default class ReservationService {
           reservationId: reservation.id,
         });
       }
-    } else if (
-      [ServerAction.CHARGING_STATION_CANCEL_RESERVATION, ServerAction.RESERVATION_DELETE].includes(
-        action
-      )
+    }
+    if (
+      [
+        ServerAction.CHARGING_STATION_CANCEL_RESERVATION,
+        ServerAction.RESERVATION_CANCEL,
+        ServerAction.RESERVATION_DELETE,
+      ].includes(action)
     ) {
-      await ReservationService.resetConnector(req.tenant, chargingStation, reservation.connectorID);
-      return chargingStationClient.cancelReservation({
+      await ReservationService.resetConnectorReservation(
+        req.tenant,
+        chargingStation,
+        reservation.connectorID
+      );
+      return await chargingStationClient.cancelReservation({
         reservationId: reservation.id,
       });
     }
@@ -766,45 +846,6 @@ export default class ReservationService {
         errorCode: HTTPError.RESERVATION_MULTIPLE_RESERVE_NOW_ERROR,
         message: `Unable to create reservation, because 'RESERVE NOW' reservation for user '${filteredRequest.userID}' already exists`,
       });
-    }
-  }
-
-  private static async updateConnectorWithReservation(
-    tenant: Tenant,
-    chargingStation: ChargingStation,
-    reservation: Reservation,
-    saveConnector = false
-  ) {
-    const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
-    const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
-    connector.currentUserID = user.id;
-    connector.currentTagID = reservation.idTag;
-    connector.reservationID = reservation.id;
-    if (saveConnector) {
-      await ChargingStationStorage.saveChargingStationConnectors(
-        tenant,
-        chargingStation.id,
-        chargingStation.connectors
-      );
-    }
-  }
-
-  private static async resetConnector(
-    tenant: Tenant,
-    chargingStation: ChargingStation,
-    connectorID: number,
-    saveConnector = false
-  ) {
-    const connector = Utils.getConnectorFromID(chargingStation, connectorID);
-    connector.currentUserID = null;
-    connector.currentTagID = null;
-    connector.reservationID = null;
-    if (saveConnector) {
-      await ChargingStationStorage.saveChargingStationConnectors(
-        tenant,
-        chargingStation.id,
-        chargingStation.connectors
-      );
     }
   }
 }

@@ -27,31 +27,36 @@ The application features:
 
 ## Installation
 
-- Install NodeJS: https://nodejs.org/ (install the LTS version)
-- Install Python: https://www.python.org/ (needed by node-gyp)
-- Install MongoDB: https://www.mongodb.com/
+- Install NodeJS: <https://nodejs.org/> (install the LTS version)
+- Install Python: <https://www.python.org/> (needed by node-gyp)
+- Install MongoDB: <https://www.mongodb.com/>
 - Clone this GitHub project
 - Install required build tools:
+
   - Under Windows as an administrator:
+
     ```powershell
     pnpm install --global --production windows-build-tools
     ```
+
   - Under Mac OS X, install Xcode from the Apple store
   - Under Debian based GNU/Linux distribution:
+
     ```shell
     sudo apt install build-essential
     ```
+
 - Go into the **ev-server** directory and run **pnpm install** or **yarn install**
 
 **NOTE**:
 
-- On Windows with **chocolatey** (https://chocolatey.org/), do as an administrator:
+- On Windows with **chocolatey** (<https://chocolatey.org/>), do as an administrator:
 
 ```powershell
 choco install -y nodejs-lts mongodb python postman robot3t microsoft-build-tools
 ```
 
-- On Mac OSX with **Homebrew** (https://brew.sh/), do:
+- On Mac OSX with **Homebrew** (<https://brew.sh/>), do:
 
 ```shell
 brew tap mongodb/brew
@@ -81,7 +86,6 @@ mongod --port 27017 --dbpath "/var/lib/mongodb" --replSet "rs0"
 Add to /path/to/mongod.cfg (open -a TextEdit /usr/local/etc/mongod.cfg)
 
 ```yaml
-
 ---
 replication:
   replSetName: 'rs0'
@@ -153,7 +157,6 @@ mongod --auth --port <port> --dbpath <path> --replSet <replcaSetName>
 Add to /path/to/mongod.cfg:
 
 ```yaml
-
 ---
 security:
   authorization: enabled
@@ -261,7 +264,7 @@ To set the end point, fill the following information in the **config.json** file
     "protocol": "http",
     "host": "YOUR_HOST",
     "port": 80,
-		"userTokenKey": "YOUR_JWT_PRIVATE_KEY",
+  "userTokenKey": "YOUR_JWT_PRIVATE_KEY",
     "userTokenLifetimeHours": 12,
     "userDemoTokenLifetimeDays": 360,
     "userTechnicalTokenLifetimeDays": 180,
@@ -272,7 +275,7 @@ To set the end point, fill the following information in the **config.json** file
   }
 ```
 
-In order to properly call the REST endpoints, both ev-server and clients (ev-dashboard, ev-mobile, etc.) must reference a Google reCaptcha key. You can refer to this link https://www.google.com/recaptcha/admin/create, then copy the server key in config.json file, in section CentralSystemRestService:
+In order to properly call the REST endpoints, both ev-server and clients (ev-dashboard, ev-mobile, etc.) must reference a Google reCaptcha key. You can refer to this link <https://www.google.com/recaptcha/admin/create>, then copy the server key in config.json file, in section CentralSystemRestService:
 
 ```json
     ...
@@ -526,8 +529,8 @@ ppnpm start:(prod|dev):(doctorprof|flameprof|bubbleprof)
 For further parameters, check the [`config`](./test/config.js) content. It is also possible to use environment variables as defined in the [`config`](./test/config.js) file
 
 - Start a server containing the configured admin user in the database
-- If you have not done it yet, run the command `ppnpm test:createContext`
-- Run the command `ppnpm test`
+- If you have not done it yet, run the command `pnpm test:createContext`
+- Run the command `pnpm test`
 
 ### Docker Mode
 
@@ -560,7 +563,7 @@ Due to fixed replica set configuration, the database hostname has to be referenc
 To enable it, as admin, add the entry `ev_mongo 127.0.0.1` in `/private/etc/hosts` for MacOSX or in `C:\Windows\System32\Drivers\etc\hosts` for Windows.
 
 The database is then accessible using the credential `evse-admin/evse-admin-pwd`.
-The default login/password on the master tenant is super.admin@ev.com/Super.admin00. The default login/password on the SLF tenant is slf.admin@ev.com/Slf.admin00.
+The default login/password on the master tenant is <super.admin@ev.com>/Super.admin00. The default login/password on the SLF tenant is <slf.admin@ev.com>/Slf.admin00.
 
 #### ev-server
 

@@ -228,6 +228,7 @@ export interface HttpChargingStationReserveNowRequest {
     expiryDate: Date;
     idTag?: string;
     visualTagID: string;
+    carID?: string;
     parentIdTag?: string;
     reservationId: number;
   };

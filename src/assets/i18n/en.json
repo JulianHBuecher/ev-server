@@ -164,6 +164,37 @@
       "title": "Account verified",
       "bodyVerified": "Your account has been verified with success. An administrator will check and activate your account.",
       "bodyVerifiedAndActivated": "Your account has been verified and activated with success."
+    },
+    "reservationCreatedNotification": {
+      "title": "Reservation Created",
+      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been created successfully."
+    },
+    "reservationCancelledNotification": {
+      "title": "Reservation Cancelled",
+      "body": "Your reservation for the charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been cancelled successfully."
+    },
+    "reservationUpcomingNotification": {
+      "title": "Reservation Upcoming",
+      "body": "Your reservation on the charging station '{{chargingStationID}}' at connector '{{connectorID}}' is upcoming."
+    },
+    "reservationUpcomingWarning": {
+      "title": "Reservation Upcoming",
+      "body": "There is a reservation upcoming from '{{fromDate}}' to '{{toDate}}' on this charging station '{{chargingStationID}}' at connector '{{connectorID}}'."
+    },
+    "reservedChargingStationBlockedNotification": {
+      "title": "Reserved Charging Station Blocked",
+      "body": "At your currently reserved charging station '{{chargingStationID}}' on connector '{{connectorID}}' a charging session started."
+    },
+    "reservationStatusChanged": {
+      "title": "Reservation Status Changed",
+      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' changed its status.",
+      "status": {
+        "reservation_done": "Reservation Done",
+        "reservation_scheduled": "Reservation Scheduled",
+        "reservation_in_progress": "Reservation In Progress",
+        "reservation_cancelled": "Reservation Cancelled",
+        "reservation_expired": "Reservation Expired"
+      }
     }
   },
   "siteArea": "Site Area",
@@ -573,7 +604,6 @@
       "text": [
         "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been created successfully."
       ],
-      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been created successfully.",
       "table": [
         {
           "label": "Charging Station",
@@ -600,7 +630,6 @@
     "reservation-cancelled": {
       "title": "Reservation Cancelled",
       "buttonText": "View Reservation",
-      "body": "Your reservation for the charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been cancelled successfully.",
       "text": [
         "Your reservation for the charging station '{{chargingStationID}}' on connector '{{connectorID}}' has been cancelled successfully.",
         "",
@@ -610,12 +639,6 @@
     "reservation-status-notification": {
       "title": "Reservation Status Changed",
       "buttonText": "Navigate to Reservation",
-      "body": "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' changed its status.",
-      "reservation_done": "Reservation Done",
-      "reservation_scheduled": "Reservation Scheduled",
-      "reservation_in_progress": "Reservation In Progress",
-      "reservation_cancelled": "Reservation Cancelled",
-      "reservation_expired": "Reservation Expired",
       "text": [
         "Your reservation for charging station '{{chargingStationID}}' on connector '{{connectorID}}' changed its status.",
         "Status change: '{{reservationStatus}}'",
@@ -624,9 +647,8 @@
       ]
     },
     "upcoming-reservation-notification": {
-      "title": "Reservation Upcoming",
+      "title": "Reservation Upcoming ('{{fromDate}'} - '{{toDate}}')",
       "buttonText": "Navigate to Reservation",
-      "body": "Your reservation on the charging station '{{chargingStationID}}' at connector '{{connectorID}}' is upcoming.",
       "text": [
         "Your reservation on the charging station '{{chargingStationID}}' at connector '{{connectorID}}' is upcoming.",
         "Planned Reservation Duration: '{{fromDate}}' - '{{toDate}}'",
@@ -641,7 +663,6 @@
     "upcoming-reservation-warning": {
       "title": "Reservation Upcoming",
       "buttonText": "Navigate to {{tenantName}}",
-      "body": "There is a reservation upcoming from '{{fromDate}}' to '{{toDate}}' on this charging station '{{chargingStationID}}' at connector '{{connectorID}}'.",
       "text": [
         "There is a reservation upcoming from '{{fromDate}}' to '{{toDate}}' on this charging station '{{chargingStationID}}' at connector '{{connectorID}}'.",
         "In case of a longer charging session, please reconsider using this charging station and relocate your car.",
@@ -652,7 +673,6 @@
     "reserved-chargingstation-blocked": {
       "title": "Reserved Charging Station Blocked",
       "buttonText": "Navigate to Reservation",
-      "body": "At your currently reserved charging station '{{chargingStationID}}' on connector '{{connectorID}}' a charging session started.",
       "text": [
         "At your currently reserved charging station '{{chargingStationID}}' on connector '{{connectorID}}' a charging session started.",
         "If you have the possibility, please consider another charging station or connector for your reservation.",

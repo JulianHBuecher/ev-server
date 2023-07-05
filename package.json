@@ -105,6 +105,7 @@
     "test:ut-template": "pnpm test:jest -- test/api/UnitTestTemplate.ts",
     "test:user": "pnpm test:jest -- test/api/UserTest.ts",
     "test:email": "pnpm test:jest -- test/api/EmailTest.ts",
+    "test:reservation": "pnpm test:jest -- test/api/ReservationTest.ts",
     "test:jest": "pnpm version && cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" TS_NODE_FILES=true jest --config='./test/jest.config.ts' --runInBand --logHeapUsage --verbose --colors --silent --forceExit"
   },
   "dependencies": {

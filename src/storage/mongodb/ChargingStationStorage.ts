@@ -134,6 +134,7 @@ export default class ChargingStationStorage {
       siteIDs?: string[];
       withSiteArea?: boolean;
       withSite?: boolean;
+      withReservation?: boolean;
     } = {},
     projectFields?: string[]
   ): Promise<ChargingStation> {
@@ -146,6 +147,7 @@ export default class ChargingStationStorage {
         includeDeleted: params.includeDeleted,
         issuer: params.issuer,
         siteIDs: params.siteIDs,
+        withReservation: params.withReservation,
       },
       Constants.DB_PARAMS_SINGLE_RECORD,
       projectFields

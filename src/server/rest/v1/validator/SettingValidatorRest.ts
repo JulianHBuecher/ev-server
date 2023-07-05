@@ -1,3 +1,6 @@
+import fs from 'fs';
+
+import global from '../../../../types/GlobalType';
 import {
   HttpSettingByIdentifierGetRequest,
   HttpSettingDeleteRequest,
@@ -5,11 +8,8 @@ import {
   HttpSettingUpdateRequest,
   HttpSettingsGetRequest,
 } from '../../../../types/requests/HttpSettingRequest';
-
 import Schema from '../../../../types/validator/Schema';
 import SchemaValidator from '../../../../validator/SchemaValidator';
-import fs from 'fs';
-import global from '../../../../types/GlobalType';
 
 export default class SettingValidatorRest extends SchemaValidator {
   private static instance: SettingValidatorRest | null = null;
@@ -19,108 +19,133 @@ export default class SettingValidatorRest extends SchemaValidator {
       'utf8'
     )
   );
+
   private settingSmartChargingSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-smart-charging-set.json`,
       'utf8'
     )
   );
+
   private settingUserSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-user-set.json`,
       'utf8'
     )
   );
+
   private settingRefundSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-refund-set.json`,
       'utf8'
     )
   );
+
   private settingPricingSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-pricing-set.json`,
       'utf8'
     )
   );
+
   private settingCryptoSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-crypto-set.json`,
       'utf8'
     )
   );
+
   private settingAnalyticsSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-analytics-set.json`,
       'utf8'
     )
   );
+
   private settingOICPSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-oicp-set.json`,
       'utf8'
     )
   );
+
   private settingBillingSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-billing-set.json`,
       'utf8'
     )
   );
+
   private settingBillingPlatformSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-billing-platform-set.json`,
       'utf8'
     )
   );
+
   private settingAssetSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-asset-set.json`,
       'utf8'
     )
   );
+
   private settingCarConnectorSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-car-connector-set.json`,
       'utf8'
     )
   );
+
   private settingCarSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-car-set.json`,
       'utf8'
     )
   );
+
   private settingOrganizationSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-organization-set.json`,
       'utf8'
     )
   );
+
   private settingStatisticsSet: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-statistics-set.json`,
       'utf8'
     )
   );
+
+  private settingReservationSet: Schema = JSON.parse(
+    fs.readFileSync(
+      `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-reservation-set.json`,
+      'utf8'
+    )
+  );
+
   private settingGet = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-get.json`,
       'utf8'
     )
   );
+
   private settingDelete = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-delete.json`,
       'utf8'
     )
   );
+
   private settingByIdentifierGet = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/setting-by-identifier-get.json`,
       'utf8'
     )
   );
+
   private settingsGet = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/setting/settings-get.json`,
@@ -223,5 +248,9 @@ export default class SettingValidatorRest extends SchemaValidator {
 
   public validateSettingStatisticsSetReq(data: Record<string, unknown>): HttpSettingUpdateRequest {
     return this.validate(this.settingStatisticsSet, data);
+  }
+
+  public validateSettingReservationSetReq(data: Record<string, unknown>): HttpSettingUpdateRequest {
+    return this.validate(this.settingReservationSet, data);
   }
 }

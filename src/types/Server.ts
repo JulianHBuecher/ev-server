@@ -756,6 +756,7 @@ export enum RESTServerRoute {
   REST_RESERVATION = 'reservations/:id',
   REST_RESERVATIONS_EXPORT = 'reservations/action/export',
   REST_RESERVATIONS_IMPORT = 'reservations/action/import',
+  REST_RESERVATIONS_CANCEL = 'reservations/:id/cancel',
 }
 
 export enum OCPIServerRoute {

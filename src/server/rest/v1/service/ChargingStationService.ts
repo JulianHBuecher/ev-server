@@ -66,7 +66,7 @@ import {
   HttpChargingStationTransactionStopRequest,
   HttpChargingStationsGetRequest,
 } from '../../../../types/requests/HttpChargingStationRequest';
-import { ReservationStatus, ReservationType } from '../../../../types/Reservation';
+import Reservation, { ReservationStatus, ReservationType } from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import SiteArea from '../../../../types/SiteArea';
 import Tag from '../../../../types/Tag';
@@ -81,11 +81,13 @@ import LoggingHelper from '../../../../utils/LoggingHelper';
 import NotificationHelper from '../../../../utils/NotificationHelper';
 import Utils from '../../../../utils/Utils';
 import { CommonUtilsService } from '../../../CommonUtilsService';
+import OCPPService from '../../../ocpp/services/OCPPService';
 import OCPPCommon from '../../../ocpp/utils/OCPPCommon';
 import OCPPUtils from '../../../ocpp/utils/OCPPUtils';
 import OICPUtils from '../../../oicp/OICPUtils';
 import ChargingStationValidatorRest from '../validator/ChargingStationValidatorRest';
 import AuthorizationService from './AuthorizationService';
+import ReservationService from './ReservationService';
 import UtilsService from './UtilsService';
 
 const MODULE_NAME = 'ChargingStationService';
@@ -1062,12 +1064,19 @@ export default class ChargingStationService {
         message: 'Charging Station is not connected to the backend',
       });
     }
-    const reserveNowRequest = await ChargingStationService.handleReserveNowRequest(
+    const reserveNowRequest = await OCPPUtils.createOCPPReserveNowRequest(
+      action,
+      req.tenant,
+      req.user,
+      filteredRequest
+    );
+    await ChargingStationService.finalizeReserveNow(
       action,
       req.tenant,
       req.user,
       chargingStation,
-      filteredRequest
+      reserveNowRequest,
+      filteredRequest.args.carID
     );
     const response = await chargingStationClient.reserveNow(reserveNowRequest);
     if (response.status !== OCPPReservationStatus.ACCEPTED) {
@@ -1121,12 +1130,13 @@ export default class ChargingStationService {
         message: 'Charging Station is not connected to the backend',
       });
     }
-    const cancelReservationRequest = await ChargingStationService.handleCancelReservationRequest(
+    const cancelReservationRequest = { ...filteredRequest.args };
+    await ChargingStationService.cancelReservationCleanUp(
       action,
       req.tenant,
       req.user,
       chargingStation,
-      filteredRequest
+      cancelReservationRequest
     );
     const result = await chargingStationClient.cancelReservation(cancelReservationRequest);
     if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
@@ -2933,34 +2943,26 @@ export default class ChargingStationService {
     );
   }
 
-  private static async handleReserveNowRequest(
+  private static async finalizeReserveNow(
     action: ServerAction,
     tenant: Tenant,
     currentUser: UserToken,
     chargingStation: ChargingStation,
-    filteredRequest: HttpChargingStationReserveNowRequest
-  ): Promise<OCPPReserveNowRequest> {
-    if (!filteredRequest.args.idTag) {
-      const tag = await UtilsService.checkAndGetTagByVisualIDAuthorization(
-        tenant,
-        currentUser,
-        filteredRequest.args.visualTagID,
-        Action.READ,
-        ServerAction.CHARGING_STATION_RESERVE_NOW
-      );
-      filteredRequest.args.idTag = tag.id;
-    }
-    const user = await UserStorage.getUserByTagID(tenant, filteredRequest.args.idTag);
+    reserveNow: OCPPReserveNowRequest,
+    carID?: string
+  ): Promise<void> {
+    const user = await UserStorage.getUserByTagID(tenant, reserveNow.idTag);
     if (Utils.isComponentActiveFromToken(currentUser, TenantComponents.RESERVATION)) {
       const reservation = await ReservationStorage.saveReservation(tenant, {
-        id: filteredRequest.args.reservationId,
+        id: reserveNow.reservationId,
         chargingStationID: chargingStation.id,
-        connectorID: filteredRequest.args.connectorId,
+        connectorID: reserveNow.connectorId,
         fromDate: new Date(),
-        toDate: filteredRequest.args.expiryDate,
-        expiryDate: filteredRequest.args.expiryDate,
-        idTag: filteredRequest.args.idTag,
-        parentIdTag: filteredRequest.args.parentIdTag,
+        toDate: reserveNow.expiryDate,
+        expiryDate: reserveNow.expiryDate,
+        idTag: reserveNow.idTag,
+        parentIdTag: reserveNow.parentIdTag,
+        carID: carID,
         status: ReservationStatus.IN_PROGRESS,
         type: ReservationType.RESERVE_NOW,
         createdBy: { id: currentUser.id },
@@ -2968,58 +2970,44 @@ export default class ChargingStationService {
       });
       NotificationHelper.notifyReservationCreated(tenant, user, reservation);
     }
-    const connector = Utils.getConnectorFromID(chargingStation, filteredRequest.args.connectorId);
-    connector.currentUserID = user.id;
-    connector.currentTagID = filteredRequest.args.idTag;
-    connector.reservationID = filteredRequest.args.reservationId;
-    await ChargingStationStorage.saveChargingStationConnectors(
+    await ReservationService.updateConnectorWithReservation(
       tenant,
-      chargingStation.id,
-      chargingStation.connectors
+      chargingStation,
+      {
+        id: reserveNow.reservationId,
+        connectorID: reserveNow.connectorId,
+        idTag: reserveNow.idTag,
+      },
+      true
     );
-    return {
-      reservationId: filteredRequest.args.reservationId,
-      connectorId: filteredRequest.args.connectorId,
-      expiryDate: filteredRequest.args.expiryDate,
-      idTag: filteredRequest.args.idTag,
-      parentIdTag: filteredRequest.args.parentIdTag,
-    };
   }
 
-  private static async handleCancelReservationRequest(
+  private static async cancelReservationCleanUp(
     action: ServerAction,
     tenant: Tenant,
     currentUser: UserToken,
     chargingStation: ChargingStation,
-    filteredRequest: HttpChargingStationReservationCancelRequest
-  ): Promise<OCPPCancelReservationRequest> {
+    cancelReservation: OCPPCancelReservationRequest
+  ): Promise<void> {
     if (Utils.isComponentActiveFromToken(currentUser, TenantComponents.RESERVATION)) {
       const reservation = await ReservationStorage.getReservation(
         tenant,
-        filteredRequest.args.reservationId
+        cancelReservation.reservationId
       );
       const user = await UserStorage.getUserByTagID(tenant, reservation.idTag);
       NotificationHelper.notifyReservationCancelled(tenant, user, reservation);
       await ReservationStorage.updateReservationStatus(
         tenant,
-        filteredRequest.args.reservationId,
+        cancelReservation.reservationId,
         ReservationStatus.CANCELLED
       );
     }
+    let connectorID: number;
     for (const connector of chargingStation.connectors) {
-      if (connector.reservationID === filteredRequest.args.reservationId) {
-        connector.currentUserID = null;
-        connector.currentTagID = null;
-        connector.reservationID = null;
+      if (connector.reservationID === cancelReservation.reservationId) {
+        connectorID = connector.connectorId;
       }
     }
-    await ChargingStationStorage.saveChargingStationConnectors(
-      tenant,
-      chargingStation.id,
-      chargingStation.connectors
-    );
-    return {
-      reservationId: filteredRequest.args.reservationId,
-    };
+    await ReservationService.resetConnectorReservation(tenant, chargingStation, connectorID, true);
   }
 }

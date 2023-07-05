@@ -321,9 +321,6 @@ export default class ReservationStorage {
       withCompany?: boolean;
       withSite?: boolean;
       withSiteArea?: boolean;
-      type?: ReservationType;
-      chargingStationIDs?: string[];
-      connectorIDs?: string[];
     } = {},
     projectFields?: string[]
   ): Promise<Reservation> {
@@ -453,37 +450,44 @@ export default class ReservationStorage {
     const startTime = Logging.traceDatabaseRequestStart();
     const METHOD_NAME = this.getReservationsByDate.name;
     const filters: FilterParams = {};
-    if (fromDate || toDate || expiryDate) {
-      filters.$or = [];
-      if (fromDate) {
-        filters.$or.push({
-          $and: [
-            { fromDate: { $gte: Utils.convertToDate(fromDate) } },
-            { fromDate: { $lte: Utils.convertToDate(toDate) } },
-          ],
-        });
-      }
-      if (toDate) {
-        filters.$or.push({
-          $and: [
-            { toDate: { $gte: Utils.convertToDate(fromDate) } },
-            { toDate: { $lte: Utils.convertToDate(toDate) } },
-          ],
-        });
-      }
-      if (expiryDate) {
-        filters.$or.push({
-          $and: [
-            { expiryDate: { $gte: Utils.convertToDate(fromDate) } },
-            { expiryDate: { $lte: Utils.convertToDate(toDate) } },
-          ],
-        });
-      }
-    }
-    const reservationsInRange = (await global.database
-      .getCollection<any>(tenant.id, COLLECTION_NAME)
-      .aggregate<any>([{ $match: filters }])
-      .toArray()) as Reservation[];
+    const reservationsInRange = await ReservationStorage.getReservations(
+      tenant,
+      {
+        dateRange: { fromDate: fromDate, toDate: toDate },
+      },
+      Constants.DB_PARAMS_MAX_LIMIT
+    );
+    // if (fromDate || toDate || expiryDate) {
+    //   filters.$or = [];
+    //   if (fromDate) {
+    //     filters.$or.push({
+    //       $and: [
+    //         { fromDate: { $gte: Utils.convertToDate(fromDate) } },
+    //         { fromDate: { $lte: Utils.convertToDate(toDate) } },
+    //       ],
+    //     });
+    //   }
+    //   if (toDate) {
+    //     filters.$or.push({
+    //       $and: [
+    //         { toDate: { $gte: Utils.convertToDate(fromDate) } },
+    //         { toDate: { $lte: Utils.convertToDate(toDate) } },
+    //       ],
+    //     });
+    //   }
+    //   if (expiryDate) {
+    //     filters.$or.push({
+    //       $and: [
+    //         { expiryDate: { $gte: Utils.convertToDate(fromDate) } },
+    //         { expiryDate: { $lte: Utils.convertToDate(toDate) } },
+    //       ],
+    //     });
+    //   }
+    // }
+    // const reservationsInRange = (await global.database
+    //   .getCollection<any>(tenant.id, COLLECTION_NAME)
+    //   .aggregate<any>([{ $match: filters }])
+    //   .toArray()) as Reservation[];
     await Logging.traceDatabaseRequestEnd(
       tenant,
       MODULE_NAME,
@@ -491,7 +495,7 @@ export default class ReservationStorage {
       startTime,
       reservationsInRange
     );
-    return reservationsInRange;
+    return reservationsInRange.result;
   }
 
   public static async getReservationsForUser(

@@ -1,38 +1,39 @@
-import { PricingSettingsType, SettingDB } from '../../../src/types/Setting';
 import chai, { expect } from 'chai';
+import chaiSubset from 'chai-subset';
+import { StatusCodes } from 'http-status-codes';
 
+import { HTTPError } from '../../../src/types/HTTPError';
+import { PricingSettingsType, SettingDB } from '../../../src/types/Setting';
+import { TenantComponents } from '../../../src/types/Tenant';
+import User from '../../../src/types/User';
+import config from '../../config';
+import ContextDefinition from '../context/ContextDefinition';
 import AssetApi from './AssetApi';
-import AuthenticatedBaseApi from './utils/AuthenticatedBaseApi';
 import AuthenticationApi from './AuthenticationApi';
-import BaseApi from './utils/BaseApi';
 import BillingApi from './BillingApi';
 import CarApi from './CarApi';
 import ChargingStationApi from './ChargingStationApi';
 import ChargingStationTemplateApi from './ChargingStationTemplateApi';
 import CompanyApi from './CompanyApi';
-import ContextDefinition from '../context/ContextDefinition';
-import { HTTPError } from '../../../src/types/HTTPError';
 import LogsApi from './LogsApi';
 import MailApi from './MailApi';
 import OCPIEndpointApi from './OCPIEndpointApi';
 import OICPEndpointApi from './OICPEndpointApi';
 import PricingApi from './PricingApi';
 import RegistrationTokenApi from './RegistrationTokenApi';
+import ReservationApi from './ReservationApi';
 import SettingApi from './SettingApi';
 import SiteApi from './SiteApi';
 import SiteAreaApi from './SiteAreaApi';
 import SmartChargingApi from './SmartChargingApi';
 import StatisticsApi from './StatisticsApi';
-import { StatusCodes } from 'http-status-codes';
 import TagApi from './TagApi';
 import TenantApi from './TenantApi';
-import { TenantComponents } from '../../../src/types/Tenant';
-import TestConstants from './utils/TestConstants';
 import TransactionApi from './TransactionApi';
-import User from '../../../src/types/User';
 import UserApi from './UserApi';
-import chaiSubset from 'chai-subset';
-import config from '../../config';
+import AuthenticatedBaseApi from './utils/AuthenticatedBaseApi';
+import BaseApi from './utils/BaseApi';
+import TestConstants from './utils/TestConstants';
 
 // Set
 chai.use(chaiSubset);
@@ -64,6 +65,7 @@ export default class CentralServerService {
   public billingApi: BillingApi;
   public pricingApi: PricingApi;
   public smartChargingApi: SmartChargingApi;
+  public reservationApi: ReservationApi;
   public _baseApi: BaseApi;
   private _baseURL: string;
   private _authenticatedUser: Partial<User>;
@@ -146,6 +148,7 @@ export default class CentralServerService {
     this.assetApi = new AssetApi(this.authenticatedApi);
     this.carApi = new CarApi(this.authenticatedApi);
     this.smartChargingApi = new SmartChargingApi(this.authenticatedApi);
+    this.reservationApi = new ReservationApi(this.authenticatedApi);
   }
 
   public static get defaultInstance(): CentralServerService {

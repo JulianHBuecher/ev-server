@@ -1,26 +1,26 @@
+import { NextFunction, Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import _ from 'lodash';
+
+import AppError from '../../../../exception/AppError';
+import SettingStorage from '../../../../storage/mongodb/SettingStorage';
+import { Action } from '../../../../types/Authorization';
+import { HTTPError } from '../../../../types/HTTPError';
+import { ServerAction } from '../../../../types/Server';
 import {
   IntegrationSettings,
   PricingSettingsType,
   SettingDB,
   TechnicalSettings,
 } from '../../../../types/Setting';
-import { NextFunction, Request, Response } from 'express';
-
-import { Action } from '../../../../types/Authorization';
-import AppError from '../../../../exception/AppError';
-import AuthorizationService from './AuthorizationService';
+import { TenantComponents } from '../../../../types/Tenant';
 import Constants from '../../../../utils/Constants';
 import Cypher from '../../../../utils/Cypher';
-import { HTTPError } from '../../../../types/HTTPError';
 import Logging from '../../../../utils/Logging';
-import { ServerAction } from '../../../../types/Server';
-import SettingStorage from '../../../../storage/mongodb/SettingStorage';
-import SettingValidatorRest from '../validator/SettingValidatorRest';
-import { StatusCodes } from 'http-status-codes';
-import { TenantComponents } from '../../../../types/Tenant';
 import Utils from '../../../../utils/Utils';
+import SettingValidatorRest from '../validator/SettingValidatorRest';
+import AuthorizationService from './AuthorizationService';
 import UtilsService from './UtilsService';
-import _ from 'lodash';
 
 const MODULE_NAME = 'SettingService';
 
@@ -293,7 +293,8 @@ export default class SettingService {
       } catch (error) {
         throw new AppError({
           errorCode: HTTPError.CRYPTO_CHECK_FAILED,
-          message: 'Crypto check failed to run: ' + error.message,
+          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+          message: `Crypto check failed to run: ${error.message}`,
           module: MODULE_NAME,
           method: 'handleUpdateSetting',
           user: req.user,
@@ -389,6 +390,8 @@ export default class SettingService {
         return SettingValidatorRest.getInstance().validateSettingOrganizationSetReq(req.body);
       case IntegrationSettings.STATISTICS:
         return SettingValidatorRest.getInstance().validateSettingStatisticsSetReq(req.body);
+      case IntegrationSettings.RESERVATION:
+        return SettingValidatorRest.getInstance().validateSettingReservationSetReq(req.body);
       default:
         throw new AppError({
           module: MODULE_NAME,

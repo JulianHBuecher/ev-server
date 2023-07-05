@@ -658,7 +658,7 @@ class ReservationNotificationHelper extends NotificationHelper {
       toDate: i18nManager.formatDateTime(reservation.toDate),
       chargingStationID: reservation.chargingStationID,
       connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
-      reservationStatus: `reservation-status-notification.${reservation.status}`,
+      reservationStatus: reservation.status,
       evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
     };
     this.notifyUserOnlyOnce(
@@ -692,7 +692,7 @@ class ReservationNotificationHelper extends NotificationHelper {
       toDate: i18nManager.formatDateTime(reservation.toDate),
       chargingStationID: reservation.chargingStationID,
       connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
-      reservationStatus: `reservation-status-notification.${reservation.status}`,
+      reservationStatus: reservation.status,
       evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
     };
     // Do it

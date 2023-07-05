@@ -1,3 +1,8 @@
+import { faker } from '@faker-js/faker';
+import { ObjectId } from 'mongodb';
+
+import { Voltage } from '../../../src/types/ChargingStation';
+import { OCPPVersion } from '../../../src/types/ocpp/OCPPServer';
 import {
   AnalyticsSettingsType,
   BillingSettingsType,
@@ -7,11 +12,6 @@ import {
   SettingDBContent,
   SmartChargingSettingsType,
 } from '../../../src/types/Setting';
-
-import { OCPPVersion } from '../../../src/types/ocpp/OCPPServer';
-import { ObjectId } from 'mongodb';
-import { Voltage } from '../../../src/types/ChargingStation';
-import { faker } from '@faker-js/faker';
 
 export interface TenantDefinition {
   id: string;
@@ -30,6 +30,7 @@ export interface TenantDefinition {
     billingPlatform?: { content?: SettingDBContent };
     asset?: { content?: SettingDBContent };
     car?: { content?: SettingDBContent };
+    reservation?: { content?: SettingDBContent };
   };
 }
 
@@ -47,6 +48,7 @@ export default class ContextDefinition {
     TENANT_ASSET: 'utasset', // Only asset component is active
     TENANT_CAR: 'utcar', // Only car and organization components are active
     TENANT_SMART_CHARGING: 'utsmartcharging', // Organization and Smart Charging components are active
+    TENANT_RESERVATION: 'utreservation', // Organization and Reservation components are active
   };
 
   public static readonly SITE_CONTEXTS: Record<string, string> = {
@@ -475,6 +477,15 @@ export default class ContextDefinition {
           },
         },
         billingPlatform: {},
+        organization: {},
+      },
+    },
+    {
+      tenantName: ContextDefinition.TENANT_CONTEXTS.TENANT_RESERVATION,
+      id: 'aaaaaaaaaaaaaaaaaaaaaab5',
+      subdomain: ContextDefinition.TENANT_CONTEXTS.TENANT_RESERVATION,
+      componentSettings: {
+        reservation: {},
         organization: {},
       },
     },

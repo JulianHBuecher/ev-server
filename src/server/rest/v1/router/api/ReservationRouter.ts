@@ -18,6 +18,7 @@ export default class ReservationRouter {
     this.buildRouteReservationUpdate();
     this.buildRouteReservationDelete();
     this.buildRouteReservationsExport();
+    this.buildRouteReservationCancel();
     // this.buildRouteReservationsImport();
     return this.router;
   }
@@ -107,6 +108,22 @@ export default class ReservationRouter {
         void RouterUtils.handleRestServerAction(
           ReservationService.handleExportReservations.bind(this),
           ServerAction.RESERVATIONS_EXPORT,
+          req,
+          res,
+          next
+        );
+      }
+    );
+  }
+
+  private buildRouteReservationCancel(): void {
+    this.router.put(
+      `/${RESTServerRoute.REST_RESERVATIONS_CANCEL}`,
+      (req: Request, res: Response, next: NextFunction) => {
+        req.query.ID = req.params.id;
+        void RouterUtils.handleRestServerAction(
+          ReservationService.handleCancelReservation.bind(this),
+          ServerAction.RESERVATION_CANCEL,
           req,
           res,
           next

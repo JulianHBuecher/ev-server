@@ -1,16 +1,15 @@
-import User, { UserStatus } from '../types/User';
-
-import { Action } from '../types/Authorization';
 import Authorizations from '../authorization/Authorizations';
 import BackendError from '../exception/BackendError';
+import TagStorage from '../storage/mongodb/TagStorage';
+import UserStorage from '../storage/mongodb/UserStorage';
+import { Action } from '../types/Authorization';
 import ChargingStation from '../types/ChargingStation';
-import LoggingHelper from '../utils/LoggingHelper';
 import { ServerAction } from '../types/Server';
 import Tag from '../types/Tag';
-import TagStorage from '../storage/mongodb/TagStorage';
 import Tenant from '../types/Tenant';
 import Transaction from '../types/Transaction';
-import UserStorage from '../storage/mongodb/UserStorage';
+import User, { UserStatus } from '../types/User';
+import LoggingHelper from '../utils/LoggingHelper';
 import Utils from '../utils/Utils';
 import UtilsService from './rest/v1/service/UtilsService';
 

@@ -1,3 +1,21 @@
+import url from 'url';
+
+import { Promise } from 'bluebird';
+import _ from 'lodash';
+import moment from 'moment';
+
+import BackendError from '../../../exception/BackendError';
+import BillingFactory from '../../../integration/billing/BillingFactory';
+import ChargingStationVendorFactory from '../../../integration/charging-station-vendor/ChargingStationVendorFactory';
+import PricingFacade from '../../../integration/pricing/PricingFacade';
+import ChargingStationStorage from '../../../storage/mongodb/ChargingStationStorage';
+import ConsumptionStorage from '../../../storage/mongodb/ConsumptionStorage';
+import DatabaseUtils from '../../../storage/mongodb/DatabaseUtils';
+import RegistrationTokenStorage from '../../../storage/mongodb/RegistrationTokenStorage';
+import SiteAreaStorage from '../../../storage/mongodb/SiteAreaStorage';
+import TenantStorage from '../../../storage/mongodb/TenantStorage';
+import TransactionStorage from '../../../storage/mongodb/TransactionStorage';
+import { Action } from '../../../types/Authorization';
 import { ChargingProfile, ChargingProfilePurposeType } from '../../../types/ChargingProfile';
 import ChargingStation, {
   ChargingStationCapabilities,
@@ -12,11 +30,15 @@ import ChargingStation, {
   StaticLimitAmps,
   TemplateUpdateResult,
 } from '../../../types/ChargingStation';
+import Consumption from '../../../types/Consumption';
+import { ActionsResponse } from '../../../types/GlobalType';
 import {
   OCPPChangeConfigurationResponse,
   OCPPChargingProfileStatus,
   OCPPConfigurationStatus,
+  OCPPReserveNowRequest,
 } from '../../../types/ocpp/OCPPClient';
+import { OCPPHeader } from '../../../types/ocpp/OCPPHeader';
 import {
   OCPPLocation,
   OCPPMeasurand,
@@ -27,37 +49,21 @@ import {
   OCPPUnitOfMeasure,
   OCPPValueFormat,
 } from '../../../types/ocpp/OCPPServer';
+import RegistrationToken from '../../../types/RegistrationToken';
+import { HttpChargingStationReserveNowRequest } from '../../../types/requests/HttpChargingStationRequest';
+import { ServerAction } from '../../../types/Server';
+import { PricingSettingsType } from '../../../types/Setting';
+import SiteArea from '../../../types/SiteArea';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
 import Transaction, { InactivityStatus } from '../../../types/Transaction';
-
-import { ActionsResponse } from '../../../types/GlobalType';
-import BackendError from '../../../exception/BackendError';
-import BillingFactory from '../../../integration/billing/BillingFactory';
-import ChargingStationStorage from '../../../storage/mongodb/ChargingStationStorage';
-import ChargingStationVendorFactory from '../../../integration/charging-station-vendor/ChargingStationVendorFactory';
+import User from '../../../types/User';
+import UserToken from '../../../types/UserToken';
 import Constants from '../../../utils/Constants';
-import Consumption from '../../../types/Consumption';
-import ConsumptionStorage from '../../../storage/mongodb/ConsumptionStorage';
-import DatabaseUtils from '../../../storage/mongodb/DatabaseUtils';
 import Logging from '../../../utils/Logging';
 import LoggingHelper from '../../../utils/LoggingHelper';
-import OCPPCommon from './OCPPCommon';
-import { OCPPHeader } from '../../../types/ocpp/OCPPHeader';
-import PricingFacade from '../../../integration/pricing/PricingFacade';
-import { PricingSettingsType } from '../../../types/Setting';
-import { Promise } from 'bluebird';
-import RegistrationToken from '../../../types/RegistrationToken';
-import RegistrationTokenStorage from '../../../storage/mongodb/RegistrationTokenStorage';
-import { ServerAction } from '../../../types/Server';
-import SiteArea from '../../../types/SiteArea';
-import SiteAreaStorage from '../../../storage/mongodb/SiteAreaStorage';
-import TenantStorage from '../../../storage/mongodb/TenantStorage';
-import TransactionStorage from '../../../storage/mongodb/TransactionStorage';
-import User from '../../../types/User';
 import Utils from '../../../utils/Utils';
-import _ from 'lodash';
-import moment from 'moment';
-import url from 'url';
+import UtilsService from '../../rest/v1/service/UtilsService';
+import OCPPCommon from './OCPPCommon';
 
 const MODULE_NAME = 'OCPPUtils';
 
@@ -2052,6 +2058,31 @@ export default class OCPPUtils {
         });
       }
     }
+  }
+
+  public static async createOCPPReserveNowRequest(
+    action: ServerAction,
+    tenant: Tenant,
+    user: UserToken,
+    filteredRequest: HttpChargingStationReserveNowRequest
+  ): Promise<OCPPReserveNowRequest> {
+    if (!filteredRequest.args.idTag) {
+      const tag = await UtilsService.checkAndGetTagByVisualIDAuthorization(
+        tenant,
+        user,
+        filteredRequest.args.visualTagID,
+        Action.READ,
+        ServerAction.CHARGING_STATION_RESERVE_NOW
+      );
+      filteredRequest.args.idTag = tag.id;
+    }
+    return {
+      reservationId: filteredRequest.args.reservationId,
+      connectorId: filteredRequest.args.connectorId,
+      expiryDate: filteredRequest.args.expiryDate,
+      idTag: filteredRequest.args.idTag,
+      parentIdTag: filteredRequest.args.parentIdTag,
+    };
   }
 
   private static async enrichChargingStationWithTemplate(

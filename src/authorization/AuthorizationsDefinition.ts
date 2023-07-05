@@ -2346,7 +2346,13 @@ export const AUTHORIZATION_DEFINITION: AuthorizationDefinition = {
       },
       {
         resource: Entity.RESERVATION,
-        action: [Action.CREATE, Action.UPDATE, Action.DELETE, Action.EXPORT],
+        action: [
+          Action.CREATE,
+          Action.UPDATE,
+          Action.DELETE,
+          Action.EXPORT,
+          Action.CANCEL_RESERVATION,
+        ],
         condition: {
           Fn: 'custom:dynamicAuthorizations',
           args: {

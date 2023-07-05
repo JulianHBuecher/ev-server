@@ -1,5 +1,5 @@
-import CreatedUpdatedProps from './CreatedUpdatedProps';
 import { SettingAuthorizationActions } from './Authorization';
+import CreatedUpdatedProps from './CreatedUpdatedProps';
 import { TenantComponents } from './Tenant';
 
 export enum TechnicalSettings {
@@ -22,6 +22,7 @@ export enum IntegrationSettings {
   CAR = 'car',
   ORGANIZATION = 'organization',
   STATISTICS = 'statistics',
+  RESERVATION = 'reservation',
 }
 
 export interface Setting extends SettingAuthorizationActions, CreatedUpdatedProps {

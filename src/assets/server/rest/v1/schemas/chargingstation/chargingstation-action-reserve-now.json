@@ -24,6 +24,9 @@
         "visualTagID": {
           "$ref": "tag#/definitions/visualID"
         },
+        "carID": {
+          "$ref": "reservation#/definitions/carID"
+        },
         "parentIdTag": {
           "$ref": "tag#/definitions/id"
         },

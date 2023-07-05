@@ -15,6 +15,7 @@ export default interface Reservation extends CreatedUpdatedProps, ReservationAut
   expiryDate: Date;
   arrivalTime?: Date;
   idTag: string;
+  visualTagID?: string;
   tag?: Tag;
   parentIdTag?: string;
   carID?: string;

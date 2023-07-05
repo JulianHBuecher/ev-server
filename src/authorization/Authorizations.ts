@@ -1,3 +1,20 @@
+import _ from 'lodash';
+import moment from 'moment';
+
+import CpoOCPIClient from '../client/ocpi/CpoOCPIClient';
+import OCPIClientFactory from '../client/ocpi/OCPIClientFactory';
+import CpoOICPClient from '../client/oicp/CpoOICPClient';
+import OICPClientFactory from '../client/oicp/OICPClientFactory';
+import BackendError from '../exception/BackendError';
+import NotificationHandler from '../notification/NotificationHandler';
+import OCPIUtils from '../server/ocpi/OCPIUtils';
+import SessionHashService from '../server/rest/v1/service/SessionHashService';
+import ChargingStationStorage from '../storage/mongodb/ChargingStationStorage';
+import OCPPStorage from '../storage/mongodb/OCPPStorage';
+import SettingStorage from '../storage/mongodb/SettingStorage';
+import TagStorage from '../storage/mongodb/TagStorage';
+import TransactionStorage from '../storage/mongodb/TransactionStorage';
+import UserStorage from '../storage/mongodb/UserStorage';
 import {
   Action,
   AuthorizationContext,
@@ -6,45 +23,29 @@ import {
   Entity,
 } from '../types/Authorization';
 import ChargingStation, { Connector } from '../types/ChargingStation';
-import Tenant, { TenantComponents } from '../types/Tenant';
-import User, { UserRole } from '../types/User';
-
-import AssignedSitesDynamicAuthorizationDataSource from './dynamic-data-source/AssignedSitesDynamicAuthorizationDataSource';
 import AuthorizationConfiguration from '../types/configuration/AuthorizationConfiguration';
-import AuthorizationsManager from './AuthorizationsManager';
-import BackendError from '../exception/BackendError';
-import ChargingStationStorage from '../storage/mongodb/ChargingStationStorage';
-import Configuration from '../utils/Configuration';
-import Constants from '../utils/Constants';
-import CpoOCPIClient from '../client/ocpi/CpoOCPIClient';
-import CpoOICPClient from '../client/oicp/CpoOICPClient';
-import DynamicAuthorizationFactory from './DynamicAuthorizationFactory';
-import Logging from '../utils/Logging';
-import LoggingHelper from '../utils/LoggingHelper';
-import NotificationHandler from '../notification/NotificationHandler';
-import OCPIClientFactory from '../client/ocpi/OCPIClientFactory';
 import { OCPIRole } from '../types/ocpi/OCPIRole';
-import OCPIUtils from '../server/ocpi/OCPIUtils';
-import OCPPStorage from '../storage/mongodb/OCPPStorage';
 import { OICPAuthorizationStatus } from '../types/oicp/OICPAuthentication';
-import OICPClientFactory from '../client/oicp/OICPClientFactory';
 import { OICPDefaultTagId } from '../types/oicp/OICPIdentification';
 import { OICPRole } from '../types/oicp/OICPRole';
-import { PricingSettingsType } from '../types/Setting';
+import Reservation from '../types/Reservation';
 import { ServerAction } from '../types/Server';
-import SessionHashService from '../server/rest/v1/service/SessionHashService';
-import SettingStorage from '../storage/mongodb/SettingStorage';
+import { PricingSettingsType } from '../types/Setting';
+import Tag from '../types/Tag';
+import Tenant, { TenantComponents } from '../types/Tenant';
+import Transaction from '../types/Transaction';
+import User, { UserRole } from '../types/User';
+import UserToken from '../types/UserToken';
+import Configuration from '../utils/Configuration';
+import Constants from '../utils/Constants';
+import Logging from '../utils/Logging';
+import AuthorizationsManager from './AuthorizationsManager';
+import AssignedSitesDynamicAuthorizationDataSource from './dynamic-data-source/AssignedSitesDynamicAuthorizationDataSource';
 import SitesAdminDynamicAuthorizationDataSource from './dynamic-data-source/SitesAdminDynamicAuthorizationDataSource';
 import SitesOwnerDynamicAuthorizationDataSource from './dynamic-data-source/SitesOwnerDynamicAuthorizationDataSource';
-import Tag from '../types/Tag';
-import TagStorage from '../storage/mongodb/TagStorage';
-import Transaction from '../types/Transaction';
-import TransactionStorage from '../storage/mongodb/TransactionStorage';
-import UserStorage from '../storage/mongodb/UserStorage';
-import UserToken from '../types/UserToken';
+import DynamicAuthorizationFactory from './DynamicAuthorizationFactory';
+import LoggingHelper from '../utils/LoggingHelper';
 import Utils from '../utils/Utils';
-import _ from 'lodash';
-import moment from 'moment';
 
 const MODULE_NAME = 'Authorizations';
 
@@ -1137,6 +1138,30 @@ export default class Authorizations {
       }
     }
     return tag;
+  }
+
+  public static async canCancelReservation(
+    loggedUser: UserToken,
+    reservation: Reservation
+  ): Promise<boolean> {
+    if (!reservation) {
+      return false;
+    }
+    const context: AuthorizationContext = {
+      user: reservation.tag.userID,
+      owner: loggedUser.id,
+      tagIDs: loggedUser.tagIDs,
+      tagID: reservation.tag.id,
+      site: reservation.chargingStation.siteID,
+      sites: loggedUser.sites,
+      sitesAdmin: loggedUser.sitesAdmin,
+    };
+    return Authorizations.canPerformAction(
+      loggedUser,
+      Entity.CONNECTOR,
+      Action.CANCEL_RESERVATION,
+      context
+    );
   }
 
   private static async checkAndGetOCPIAuthorizationIDFromOCPPAuthorize(

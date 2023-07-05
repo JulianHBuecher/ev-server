@@ -554,6 +554,10 @@ export default class EMailNotificationTask implements NotificationTask {
     severity: NotificationSeverity
   ): Promise<NotificationResult> {
     data.buttonUrl = data.evseDashboardReservationURL;
+    const i18nInstance = I18nManager.getInstanceForLocale(user.locale);
+    data.reservationStatus = i18nInstance.translate(
+      `notifications.reservationStatusChanged.status.${data.reservationStatus}`
+    );
     return await this.prepareAndSendEmail(
       'reservation-status-notification',
       data,
