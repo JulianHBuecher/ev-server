@@ -560,9 +560,9 @@ export default class ReservationService {
       reservation
     );
     if (reservation) {
-      if (Utils.isNullOrUndefined(reservationToSave.status)) {
-        reservationToSave.status = ReservationService.determineReservationStatus(reservation);
-      }
+      // if (Utils.isNullOrUndefined(reservationToSave.status)) {
+      reservationToSave.status = ReservationService.determineReservationStatus(reservation);
+      // }
       ReservationService.checkReservationStatusTransition(reservation, reservationToSave.status);
       if (reservation.chargingStationID !== reservationToSave.chargingStationID) {
         await ReservationService.contactChargingStation(
