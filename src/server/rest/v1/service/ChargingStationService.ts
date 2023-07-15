@@ -44,11 +44,9 @@ import { OCPIEvseStatus } from '../../../../types/ocpi/OCPIEvse';
 import { OCPIRole } from '../../../../types/ocpi/OCPIRole';
 import {
   OCPPCancelReservationRequest,
-  OCPPCancelReservationStatus,
   OCPPChangeConfigurationResponse,
   OCPPConfigurationStatus,
   OCPPGetCompositeScheduleResponse,
-  OCPPReservationStatus,
   OCPPReserveNowRequest,
   OCPPStatus,
   OCPPUnlockStatus,
@@ -60,13 +58,11 @@ import {
   HttpChargingStationConfigurationChangeRequest,
   HttpChargingStationLimitPowerRequest,
   HttpChargingStationParamsUpdateRequest,
-  HttpChargingStationReservationCancelRequest,
-  HttpChargingStationReserveNowRequest,
   HttpChargingStationTransactionStartRequest,
   HttpChargingStationTransactionStopRequest,
   HttpChargingStationsGetRequest,
 } from '../../../../types/requests/HttpChargingStationRequest';
-import Reservation, { ReservationStatus, ReservationType } from '../../../../types/Reservation';
+import { ReservationStatus, ReservationType } from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
 import SiteArea from '../../../../types/SiteArea';
 import Tag from '../../../../types/Tag';
@@ -81,7 +77,6 @@ import LoggingHelper from '../../../../utils/LoggingHelper';
 import NotificationHelper from '../../../../utils/NotificationHelper';
 import Utils from '../../../../utils/Utils';
 import { CommonUtilsService } from '../../../CommonUtilsService';
-import OCPPService from '../../../ocpp/services/OCPPService';
 import OCPPCommon from '../../../ocpp/utils/OCPPCommon';
 import OCPPUtils from '../../../ocpp/utils/OCPPUtils';
 import OICPUtils from '../../../oicp/OICPUtils';
@@ -1079,7 +1074,7 @@ export default class ChargingStationService {
       filteredRequest.args.carID
     );
     const response = await chargingStationClient.reserveNow(reserveNowRequest);
-    if (response.status !== OCPPReservationStatus.ACCEPTED) {
+    if (response.status !== 'ACCEPTED') {
       throw new AppError({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
         action,
@@ -1139,7 +1134,7 @@ export default class ChargingStationService {
       cancelReservationRequest
     );
     const result = await chargingStationClient.cancelReservation(cancelReservationRequest);
-    if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
+    if (result.status.toUpperCase() !== 'ACCEPTED') {
       throw new AppError({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
         action,

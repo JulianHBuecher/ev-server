@@ -1,7 +1,6 @@
 import { ChargingRateUnitType, ChargingSchedule, Profile } from '../../types/ChargingProfile';
-
-import { OCPPDataTransferStatus } from './OCPPServer';
 import { OcppParameter } from '../ChargingStation';
+import { OCPPDataTransferStatus } from './OCPPServer';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface OCPPResetRequest {
@@ -214,13 +213,14 @@ export interface OCPPReserveNowRequest {
   reservationId: number;
 }
 
-export enum OCPPReservationStatus {
-  ACCEPTED = 'Accepted',
-  FAULTED = 'Faulted',
-  OCCUPIED = 'Occupied',
-  REJECTED = 'Rejected',
-  UNAVAILABLE = 'Unavailable',
-}
+export const OCPPReservationStatus = {
+  ...OCPPStatus,
+  FAULTED: 'Faulted',
+  OCCUPIED: 'Occupied',
+  UNAVAILABLE: 'Unavailable',
+} as const;
+
+export type OCPPReservationStatus = keyof typeof OCPPReservationStatus;
 
 export interface OCPPReserveNowResponse {
   status: OCPPReservationStatus;
@@ -230,10 +230,11 @@ export interface OCPPCancelReservationRequest {
   reservationId: number;
 }
 
-export enum OCPPCancelReservationStatus {
-  ACCEPTED = 'Accepted',
-  REJECTED = 'Rejected',
-}
+export const OCPPCancelReservationStatus = {
+  ...OCPPStatus,
+} as const;
+
+export type OCPPCancelReservationStatus = keyof typeof OCPPCancelReservationStatus;
 
 export interface OCPPCancelReservationResponse {
   status: OCPPCancelReservationStatus;

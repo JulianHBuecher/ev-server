@@ -14,8 +14,6 @@ import { ReservationDataResult } from '../../../../types/DataResult';
 import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import {
   OCPPCancelReservationResponse,
-  OCPPCancelReservationStatus,
-  OCPPReservationStatus,
   OCPPReserveNowResponse,
 } from '../../../../types/ocpp/OCPPClient';
 import { ChargePointStatus } from '../../../../types/ocpp/OCPPServer';
@@ -126,7 +124,10 @@ export default class ReservationService {
     );
     const user = await UserStorage.getUserByTagID(req.tenant, reservation.idTag);
     NotificationHelper.notifyReservationCreated(req.tenant, user, reservation);
-    res.json(Object.assign({ id: reservation.id }, Constants.REST_RESPONSE_SUCCESS));
+    const response = reservation
+      ? Object.assign({ id: reservation.id }, Constants.REST_RESPONSE_SUCCESS)
+      : { status: HTTPError.RESERVATION_REJECTED_ERROR };
+    res.json(response);
     next();
   }
 
@@ -499,17 +500,21 @@ export default class ReservationService {
         action
       );
     }
-    const reservation = await ReservationStorage.getReservation(req.tenant, filteredRequest.id, {
-      withTag: true,
-    });
+    const existingReservation = await ReservationStorage.getReservation(
+      req.tenant,
+      filteredRequest.id,
+      {
+        withTag: true,
+      }
+    );
     const chargingStation = await ChargingStationStorage.getChargingStation(
       req.tenant,
       filteredRequest.chargingStationID,
       { withReservation: true }
     );
     if (
-      !Utils.isNullOrUndefined(reservation) &&
-      reservation?.tag.visualID !== filteredRequest.visualTagID
+      !Utils.isNullOrUndefined(existingReservation) &&
+      existingReservation?.tag.visualID !== filteredRequest.visualTagID
     ) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
@@ -523,7 +528,7 @@ export default class ReservationService {
     // Handle uncompleted clean up process
     if (
       ![ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED].includes(
-        connector['reservation']?.status
+        connector?.reservation?.status
       )
     ) {
       connector = await ReservationService.resetConnectorReservation(
@@ -533,8 +538,13 @@ export default class ReservationService {
         true
       );
     }
-    const reservationOnCS = connector['reservation'] as Reservation;
-    if (!Utils.isNullOrUndefined(reservationOnCS) && reservationOnCS.id !== filteredRequest.id) {
+    // Check for another reservation already ongoing on connector
+    // If they have not the same ID backend and CS are desynchronized
+    const reservationOnConnector = connector.reservation;
+    if (
+      !Utils.isNullOrUndefined(reservationOnConnector) &&
+      Number(reservationOnConnector.id) !== filteredRequest.id
+    ) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
         module: MODULE_NAME,
@@ -557,22 +567,26 @@ export default class ReservationService {
       req,
       action,
       filteredRequest,
-      reservation
+      existingReservation
     );
-    if (reservation) {
-      // if (Utils.isNullOrUndefined(reservationToSave.status)) {
-      reservationToSave.status = ReservationService.determineReservationStatus(reservation);
-      // }
-      ReservationService.checkReservationStatusTransition(reservation, reservationToSave.status);
-      if (reservation.chargingStationID !== reservationToSave.chargingStationID) {
+    reservationToSave.status = ReservationService.determineReservationStatus(reservationToSave);
+    if (existingReservation) {
+      ReservationService.checkReservationStatusTransition(
+        existingReservation,
+        reservationToSave.status
+      );
+      // In case the updated reservation changed the CS
+      if (
+        existingReservation.chargingStationID !== reservationToSave.chargingStationID ||
+        existingReservation.connectorID !== reservationToSave.connectorID ||
+        moment(reservationToSave.fromDate).isAfter(existingReservation.toDate)
+      ) {
         await ReservationService.contactChargingStation(
           req,
           ServerAction.RESERVATION_CANCEL,
-          reservation
+          existingReservation
         );
       }
-    } else {
-      reservationToSave.status = ReservationService.determineReservationStatus(reservationToSave);
     }
     await ReservationService.checkForReservationCollisions(req.tenant, reservationToSave);
     if (reservationToSave.type === ReservationType.RESERVE_NOW) {
@@ -587,20 +601,22 @@ export default class ReservationService {
       action,
       reservationToSave
     );
-    if (!Utils.isNullOrUndefined(response)) {
-      ReservationService.handleReservationResponses(response, reservationToSave);
+    const error = ReservationService.handleReservationResponses(response, reservationToSave);
+    if (error) {
+      throw error;
+    } else {
+      await Logging.logInfo({
+        ...LoggingHelper.getReservationProperties(reservationToSave),
+        tenantID: req.tenant.id,
+        user: req.user,
+        module: MODULE_NAME,
+        method: ReservationService.handleCreateReservation.name,
+        message: `'${Utils.buildReservationName(reservationToSave)}' has been saved successfully`,
+        action: action,
+        detailedMessages: { reservationToSave },
+      });
+      return await ReservationStorage.saveReservation(req.tenant, reservationToSave);
     }
-    await Logging.logInfo({
-      ...LoggingHelper.getReservationProperties(reservationToSave),
-      tenantID: req.tenant.id,
-      user: req.user,
-      module: MODULE_NAME,
-      method: ReservationService.handleCreateReservation.name,
-      message: `'${Utils.buildReservationName(reservationToSave)}' has been saved successfully`,
-      action: action,
-      detailedMessages: { reservationToSave },
-    });
-    return await ReservationStorage.saveReservation(req.tenant, reservationToSave);
   }
 
   private static async deleteReservation(
@@ -625,9 +641,21 @@ export default class ReservationService {
     );
     const reservation = await ReservationService.getReservation(req, filteredRequest);
     if ([ReservationStatus.IN_PROGRESS, null].includes(reservation.status)) {
-      const result = await ReservationService.contactChargingStation(req, action, reservation);
-      if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
-        return;
+      try {
+        await ReservationService.contactChargingStation(req, action, reservation);
+      } catch (error) {
+        await Logging.logError({
+          ...LoggingHelper.getReservationProperties(reservation),
+          tenantID: req.tenant.id,
+          user: req.user,
+          module: MODULE_NAME,
+          method: ReservationService.handleDeleteReservation.name,
+          message: `'${Utils.buildReservationName(
+            reservation
+          )}' is not available on charging station`,
+          action: action,
+          detailedMessages: { reservation },
+        });
       }
     }
     await ReservationStorage.deleteReservation(req.tenant, filteredRequest.ID);
@@ -660,7 +688,7 @@ export default class ReservationService {
     );
     if (reservation.status === ReservationStatus.IN_PROGRESS) {
       const result = await ReservationService.contactChargingStation(req, action, reservation);
-      if (result.status !== OCPPCancelReservationStatus.ACCEPTED) {
+      if (result.status !== 'ACCEPTED') {
         return;
       }
     }
@@ -687,6 +715,7 @@ export default class ReservationService {
     action: ServerAction,
     reservation: Reservation
   ): Promise<OCPPReserveNowResponse | OCPPCancelReservationResponse> {
+    let response: OCPPReserveNowResponse | OCPPCancelReservationResponse = null;
     // Get the Charging station
     const chargingStation = await UtilsService.checkAndGetChargingStationAuthorization(
       req.tenant,
@@ -716,19 +745,21 @@ export default class ReservationService {
           action
         )
       ) {
-        await ReservationService.updateConnectorWithReservation(
-          req.tenant,
-          chargingStation,
-          reservation,
-          true
-        );
-        return await chargingStationClient.reserveNow({
+        response = await chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
           expiryDate: reservation.expiryDate,
           idTag: reservation.idTag,
           parentIdTag: reservation.parentIdTag,
           reservationId: reservation.id,
         });
+        if (response.status.toUpperCase() === 'ACCEPTED') {
+          await ReservationService.updateConnectorWithReservation(
+            req.tenant,
+            chargingStation,
+            reservation,
+            true
+          );
+        }
       }
     }
     if (
@@ -738,15 +769,18 @@ export default class ReservationService {
         ServerAction.RESERVATION_DELETE,
       ].includes(action)
     ) {
-      await ReservationService.resetConnectorReservation(
-        req.tenant,
-        chargingStation,
-        reservation.connectorID
-      );
-      return await chargingStationClient.cancelReservation({
+      response = await chargingStationClient.cancelReservation({
         reservationId: reservation.id,
       });
+      if (response.status === 'ACCEPTED') {
+        await ReservationService.resetConnectorReservation(
+          req.tenant,
+          chargingStation,
+          reservation.connectorID
+        );
+      }
     }
+    return response;
   }
 
   private static convertToCSV(
@@ -816,33 +850,33 @@ export default class ReservationService {
     response: OCPPReserveNowResponse | OCPPCancelReservationResponse,
     reservation: Reservation
   ) {
-    switch (response.status) {
-      case OCPPReservationStatus.REJECTED:
-        throw new AppError({
+    switch (response?.status.toUpperCase()) {
+      case 'REJECTED':
+        return new AppError({
           action: ServerAction.RESERVATION_CREATE,
           module: MODULE_NAME,
           method: ReservationService.handleReservationResponses.name,
           errorCode: HTTPError.RESERVATION_REJECTED_ERROR,
           message: `Unable to create reservation, either reservation on connector '${reservation.connectorID}' is not supported or another error occurred'`,
         });
-      case OCPPReservationStatus.FAULTED:
-        throw new AppError({
+      case 'FAULTED':
+        return new AppError({
           action: ServerAction.RESERVATION_CREATE,
           module: MODULE_NAME,
           method: ReservationService.handleReservationResponses.name,
           errorCode: HTTPError.RESERVATION_FAULTED_ERROR,
           message: `Unable to create reservation, charging station '${reservation.chargingStationID}' or connector '${reservation.connectorID}' are in faulted state'`,
         });
-      case OCPPReservationStatus.OCCUPIED:
-        throw new AppError({
+      case 'OCCUPIED':
+        return new AppError({
           action: ServerAction.RESERVATION_CREATE,
           module: MODULE_NAME,
           method: ReservationService.handleReservationResponses.name,
           errorCode: HTTPError.RESERVATION_OCCUPIED_ERROR,
           message: `Unable to create reservation, connector '${reservation.connectorID}' seems to be occupied'`,
         });
-      case OCPPReservationStatus.UNAVAILABLE:
-        throw new AppError({
+      case 'UNAVAILABLE':
+        return new AppError({
           action: ServerAction.RESERVATION_CREATE,
           module: MODULE_NAME,
           method: ReservationService.handleReservationResponses.name,

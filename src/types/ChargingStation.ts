@@ -16,6 +16,7 @@ import {
 } from './ocpp/OCPPServer';
 import { OICPEvseDataRecord } from './oicp/OICPEvse';
 import { OICPIdentification } from './oicp/OICPIdentification';
+import Reservation from './Reservation';
 import Site from './Site';
 import SiteArea from './SiteArea';
 import { InactivityStatus } from './Transaction';
@@ -176,6 +177,7 @@ export interface Connector extends ConnectorAuthorizationActions {
   phaseAssignmentToGrid?: PhaseAssignmentToGrid;
   tariffID?: string;
   reservationID?: number;
+  reservation?: Reservation;
 }
 
 export interface PhaseAssignmentToGrid {

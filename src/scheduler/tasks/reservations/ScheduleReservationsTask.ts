@@ -5,9 +5,8 @@ import LockingManager from '../../../locking/LockingManager';
 import ReservationService from '../../../server/rest/v1/service/ReservationService';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
 import { LockEntity } from '../../../types/Locking';
-import { OCPPReservationStatus } from '../../../types/ocpp/OCPPClient';
 import { ChargePointStatus } from '../../../types/ocpp/OCPPServer';
-import { ReservationStatus } from '../../../types/Reservation';
+import Reservation, { ReservationStatus } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import { TaskConfig } from '../../../types/TaskConfig';
 import Tenant, { TenantComponents } from '../../../types/Tenant';
@@ -38,14 +37,16 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
     );
     if (await LockingManager.acquire(reservationsLock)) {
       try {
-        // TODO: Validate, that we need five minutes here
         const upcomingReservations = await ReservationStorage.getReservations(
           tenant,
           {
             withChargingStation: true,
             withTag: true,
             withUser: true,
-            dateRange: { fromDate: moment().toDate(), toDate: moment().add(5, 'minutes').toDate() },
+            dateRange: {
+              fromDate: moment().toDate(),
+              toDate: moment().add(15, 'minutes').toDate(),
+            },
             statuses: [ReservationStatus.SCHEDULED],
           },
           Constants.DB_PARAMS_MAX_LIMIT
@@ -58,57 +59,10 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           },
           Constants.DB_PARAMS_MAX_LIMIT
         );
-        if (!Utils.isEmptyArray(upcomingReservations.result)) {
-          for (const reservation of upcomingReservations.result) {
-            reservation.status = ReservationStatus.IN_PROGRESS;
-            const chargingStationClient =
-              await ChargingStationClientFactory.getChargingStationClient(
-                tenant,
-                reservation.chargingStation
-              );
-            const response = await chargingStationClient.reserveNow({
-              connectorId: reservation.connectorID,
-              expiryDate: reservation.expiryDate ?? reservation.toDate,
-              idTag: reservation.idTag,
-              reservationId: reservation.id,
-              parentIdTag: reservation.parentIdTag ?? '',
-            });
-            if (response.status === OCPPReservationStatus.ACCEPTED) {
-              NotificationHelper.notifyReservationStatusChanged(
-                tenant,
-                reservation.tag.user,
-                reservation
-              );
-              await ReservationService.updateConnectorWithReservation(
-                tenant,
-                reservation.chargingStation,
-                reservation,
-                true
-              );
-              await ReservationStorage.saveReservation(tenant, reservation);
-            }
-          }
-        }
-        if (!Utils.isEmptyArray(ongoingReservations.result)) {
-          for (const reservation of ongoingReservations.result) {
-            const chargingStation = reservation.chargingStation;
-            const connector = Utils.getConnectorFromID(chargingStation, reservation.connectorID);
-            if (connector.status === ChargePointStatus.AVAILABLE) {
-              const chargingStationClient =
-                await ChargingStationClientFactory.getChargingStationClient(
-                  tenant,
-                  chargingStation
-                );
-              await chargingStationClient.reserveNow({
-                connectorId: reservation.connectorID,
-                expiryDate: reservation.expiryDate ?? reservation.toDate,
-                idTag: reservation.idTag,
-                reservationId: reservation.id,
-                parentIdTag: reservation.parentIdTag ?? '',
-              });
-            }
-          }
-        }
+        await this.synchronizeWithChargingStation(
+          [...upcomingReservations.result, ...ongoingReservations.result],
+          tenant
+        );
       } catch (error) {
         await Logging.logActionExceptionMessage(
           tenant.id,
@@ -117,6 +71,49 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
         );
       } finally {
         await LockingManager.release(reservationsLock);
+      }
+    }
+  }
+
+  private async synchronizeWithChargingStation(reservations: Reservation[], tenant: Tenant) {
+    if (!Utils.isEmptyArray(reservations)) {
+      for (const reservation of reservations) {
+        const oldStatus = reservation.status;
+        reservation.status = ReservationStatus.IN_PROGRESS;
+        const chargingStationClient = await ChargingStationClientFactory.getChargingStationClient(
+          tenant,
+          reservation.chargingStation
+        );
+        const connector = Utils.getConnectorFromID(
+          reservation.chargingStation,
+          reservation.connectorID
+        );
+        if (connector.status !== ChargePointStatus.AVAILABLE) {
+          return;
+        }
+        const response = await chargingStationClient.reserveNow({
+          connectorId: reservation.connectorID,
+          expiryDate: reservation.expiryDate ?? reservation.toDate,
+          idTag: reservation.idTag,
+          reservationId: reservation.id,
+          parentIdTag: reservation.parentIdTag ?? '',
+        });
+        if (response.status.toUpperCase() === 'ACCEPTED') {
+          if (oldStatus !== reservation.status) {
+            NotificationHelper.notifyReservationStatusChanged(
+              tenant,
+              reservation.tag.user,
+              reservation
+            );
+            await ReservationStorage.saveReservation(tenant, reservation);
+          }
+          await ReservationService.updateConnectorWithReservation(
+            tenant,
+            reservation.chargingStation,
+            reservation,
+            true
+          );
+        }
       }
     }
   }

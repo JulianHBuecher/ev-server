@@ -35,7 +35,6 @@ import Consumption from '../../../types/Consumption';
 import {
   OCPPCancelReservationRequest,
   OCPPCancelReservationResponse,
-  OCPPCancelReservationStatus,
   OCPPRemoteStartStopStatus,
 } from '../../../types/ocpp/OCPPClient';
 import { OCPPHeader } from '../../../types/ocpp/OCPPHeader';
@@ -925,7 +924,7 @@ export default class OCPPService {
       NotificationHelper.sendChargingStationRegistered(tenant, chargingStation);
       NotificationHelper.notifyReservationCancelled(tenant, user, reservation);
       return {
-        status: OCPPCancelReservationStatus.ACCEPTED,
+        status: 'ACCEPTED',
       };
     } catch (error) {
       await Logging.logError({
@@ -937,7 +936,7 @@ export default class OCPPService {
         detailedMessages: { error, cancelReservation },
       });
       return {
-        status: OCPPCancelReservationStatus.REJECTED,
+        status: 'REJECTED',
       };
     }
   }

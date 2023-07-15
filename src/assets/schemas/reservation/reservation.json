@@ -54,14 +54,7 @@
     },
     "status": {
       "type": ["string", "null"],
-      "enum": [
-        null,
-        "reservation_done",
-        "reservation_scheduled",
-        "reservation_in_progress",
-        "reservation_cancelled",
-        "reservation_expired"
-      ],
+      "pattern": "^(([^|]*)(\\||[^|])*)?$",
       "nullable": true
     }
   },
