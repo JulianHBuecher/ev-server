@@ -928,8 +928,8 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const title = i18nManager.translate('notifications.reservation-status-notification.title');
-    const body = i18nManager.translate('notifications.reservation-status-notification.body', {
+    const title = i18nManager.translate('notifications.reservationStatusChanged.title');
+    const body = i18nManager.translate('notifications.reservationStatusChanged.body', {
       chargingStationID: data.chargingStationID,
       connectorID: data.connectorID,
       reservationStatus: data.reservationStatus,
@@ -960,17 +960,16 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const notificationType = user.id !== data.user.id ? 'warning' : 'notification';
-    severity = notificationType.includes('warning')
+    const notificationType = user.id !== data.user.id ? 'Warning' : 'Notification';
+    severity = notificationType.includes('Warning')
       ? NotificationSeverity.WARNING
       : NotificationSeverity.INFO;
     const title = i18nManager.translate(
-      `notifications.upcoming-reservation-${notificationType}.title`
+      `notifications.reservationUpcoming${notificationType}.title`
     );
     const body = i18nManager.translate(
-      `notifications.upcoming-reservation-${notificationType}.body`,
+      `notifications.reservationUpcoming${notificationType}.body`,
       {
-        tenantName: tenant.name,
         fromDate: data.fromDate,
         toDate: data.toDate,
         chargingStationID: data.chargingStationID,
@@ -1005,11 +1004,16 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const title = i18nManager.translate('notifications.reserved-chargingstation-blocked.title');
-    const body = i18nManager.translate('notifications.reserved-chargingstation-blocked.body', {
-      chargingStationID: data.chargingStationID,
-      connectorID: data.connectorID,
-    });
+    const title = i18nManager.translate(
+      'notifications.reservedChargingStationBlockedNotification.title'
+    );
+    const body = i18nManager.translate(
+      'notifications.reservedChargingStationBlockedNotification.body',
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+      }
+    );
     // Send Notification
     await this.sendRemotePushNotificationToUser(
       tenant,
@@ -1035,15 +1039,15 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const title = i18nManager.translate('notifications.reservation-created.title');
-    const body = i18nManager.translate('notifications.reservation-created.body', {
+    const title = i18nManager.translate('notifications.reservationCreatedNotification.title');
+    const body = i18nManager.translate('notifications.reservationCreatedNotification.body', {
       chargingStationID: data.chargingStationID,
       connectorID: data.connectorID,
     });
     // Send Notification
     await this.sendRemotePushNotificationToUser(
       tenant,
-      UserNotificationType.RESERVATION_CANCELLED_NOTIFICATION,
+      UserNotificationType.RESERVATION_CREATED_NOTIFICATION,
       title,
       body,
       user,
@@ -1065,8 +1069,8 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const title = i18nManager.translate('notifications.reservation-cancelled.title');
-    const body = i18nManager.translate('notifications.reservation-cancelled.body', {
+    const title = i18nManager.translate('notifications.reservationCancelledNotification.title');
+    const body = i18nManager.translate('notifications.reservationCancelledNotification.body', {
       chargingStationID: data.chargingStationID,
       connectorID: data.connectorID,
     });

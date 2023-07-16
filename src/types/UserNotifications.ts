@@ -77,6 +77,7 @@ export enum UserNotificationType {
   END_USER_ERROR_NOTIFICATION = 'EndUserErrorNotification',
   ACCOUNT_VERIFICATION_NOTIFICATION = 'AccountVerificationNotification',
   RESERVATION_STATUS_CHANGED_NOTIFICATION = 'ReservationStatusChangedNotification',
+  RESERVATION_CREATED_NOTIFICATION = 'ReservationCreatedNotification',
   RESERVATION_UPCOMING_NOTIFICATION = 'ReservationUpcomingNotification',
   RESERVATION_CHARGING_STATION_BLOCKED = 'ReservationChargingStationBlocked',
   RESERVATION_CANCELLED_NOTIFICATION = 'ReservationCancelledNotification',
