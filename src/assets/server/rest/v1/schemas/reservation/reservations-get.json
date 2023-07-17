@@ -8,18 +8,27 @@
       "$ref": "common#/definitions/search"
     },
     "ReservationID": {
-      "$ref": "common#/definitions/ids"
+      "$ref": "common#/definitions/number-ids"
     },
     "ChargingStationID": {
-      "$ref": "common#/definitions/ids"
+      "$ref": "common#/definitions/string-ids"
     },
     "ConnectorID": {
-      "$ref": "common#/definitions/ids"
+      "$ref": "common#/definitions/number-ids"
     },
     "UserID": {
       "$ref": "common#/definitions/ids"
     },
     "CarID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "SiteID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "SiteAreaID": {
+      "$ref": "common#/definitions/ids"
+    },
+    "CompanyID": {
       "$ref": "common#/definitions/ids"
     },
     "StartDateTime": {

@@ -58,7 +58,8 @@ export default class ReservationStorage {
       filters.$or.push(
         { _id: { $regex: params.search, $options: 'i' } },
         { type: { $regex: params.search, $options: 'i' } },
-        { status: { $regex: params.search, $options: 'i' } }
+        { status: { $regex: params.search, $options: 'i' } },
+        { chargingStationID: { $regex: params.search, $options: 'i' } }
       );
     }
     if (!Utils.isEmptyArray(params.reservationIDs)) {
@@ -89,36 +90,38 @@ export default class ReservationStorage {
       !Utils.isNullOrUndefined(params.dateRange?.fromDate) ||
       !Utils.isNullOrUndefined(params.dateRange?.toDate)
     ) {
-      const dateRange = [
-        {
-          $and: [
-            { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
-            { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
-          ],
-        },
-        {
-          $and: [
-            { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
-            { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
-          ],
-        },
-        {
-          fromDate: {
-            $gte: Utils.convertToDate(params.dateRange.fromDate),
-            $lt: Utils.convertToDate(params.dateRange.toDate),
+      const dateRange = {
+        $or: [
+          {
+            $and: [
+              { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
+              { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
+            ],
           },
-        },
-        {
-          toDate: {
-            $gte: Utils.convertToDate(params.dateRange.fromDate),
-            $lt: Utils.convertToDate(params.dateRange.toDate),
+          {
+            $and: [
+              { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
+              { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
+            ],
           },
-        },
-      ];
-      if (Utils.isEmptyArray(filters.$or)) {
-        filters.$or = dateRange;
+          {
+            fromDate: {
+              $gte: Utils.convertToDate(params.dateRange.fromDate),
+              $lt: Utils.convertToDate(params.dateRange.toDate),
+            },
+          },
+          {
+            toDate: {
+              $gte: Utils.convertToDate(params.dateRange.fromDate),
+              $lt: Utils.convertToDate(params.dateRange.toDate),
+            },
+          },
+        ],
+      };
+      if (filters.$and) {
+        filters.$and.push(dateRange);
       } else {
-        filters.$or.push(dateRange);
+        filters.$and = [dateRange];
       }
     }
     if (params.expiryDate) {
@@ -126,8 +129,6 @@ export default class ReservationStorage {
       filters.expiryDate = {};
       filters.expiryDate.$lte = Utils.convertToDate(params.expiryDate);
     }
-
-    aggregation.push({ $match: filters });
 
     const reservationsCount = await global.database
       .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
@@ -170,12 +171,15 @@ export default class ReservationStorage {
       DatabaseUtils.pushTagLookupInAggregation({
         tenantID: tenant.id,
         aggregation: aggregation,
-        asField: 'tag',
         localField: 'idTag',
         foreignField: '_id',
+        asField: 'tag',
         oneToOneCardinality: true,
-        oneToOneCardinalityNotNull: false,
+        oneToOneCardinalityNotNull: true,
       });
+      if (params.search) {
+        filters.$or.push({ 'tag.visualID': { $regex: params.search, $options: 'im' } });
+      }
       if (params.withUser) {
         DatabaseUtils.pushUserLookupInAggregation({
           tenantID: tenant.id,
@@ -184,7 +188,7 @@ export default class ReservationStorage {
           localField: 'tag.userID',
           foreignField: '_id',
           oneToOneCardinality: true,
-          oneToOneCardinalityNotNull: false,
+          oneToOneCardinalityNotNull: true,
         });
       }
     }
@@ -219,6 +223,11 @@ export default class ReservationStorage {
           oneToOneCardinality: true,
           oneToOneCardinalityNotNull: false,
         });
+        if (params.search) {
+          filters.$or.push({
+            'chargingStation.site.name': { $regex: params.search, $options: 'im' },
+          });
+        }
       }
       if (params.withSiteArea) {
         DatabaseUtils.pushSiteAreaLookupInAggregation({
@@ -230,8 +239,14 @@ export default class ReservationStorage {
           oneToOneCardinality: true,
           oneToOneCardinalityNotNull: false,
         });
+        if (params.search) {
+          filters.$or.push({
+            'chargingStation.siteArea.name': { $regex: params.search, $options: 'im' },
+          });
+        }
       }
     }
+    aggregation.push({ $match: filters });
     if (!Utils.isEmptyArray(params.userIDs)) {
       aggregation.push({
         $match: {
