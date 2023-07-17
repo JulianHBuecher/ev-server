@@ -543,7 +543,8 @@ export default class ReservationService {
     const reservationOnConnector = connector.reservation;
     if (
       !Utils.isNullOrUndefined(reservationOnConnector) &&
-      Number(reservationOnConnector.id) !== filteredRequest.id
+      Number(reservationOnConnector.id) !== filteredRequest.id &&
+      filteredRequest.type === ReservationType.RESERVE_NOW
     ) {
       throw new AppError({
         action: ServerAction.RESERVATION_CREATE,
