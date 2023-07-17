@@ -945,6 +945,7 @@ export default class RemotePushNotificationTask implements NotificationTask {
         chargingStationID: data.chargingStationID,
         connectorID: data.connectorID,
         reservationStatus: data.reservationStatus,
+        deepLink: data.evseDashboardReservationURL,
       },
       severity
     );
@@ -989,6 +990,7 @@ export default class RemotePushNotificationTask implements NotificationTask {
         toDate: data.toDate,
         chargingStationID: data.chargingStationID,
         connectorID: data.connectorID,
+        deepLink: data.evseDashboardReservationURL,
       },
       severity
     );
@@ -1024,6 +1026,7 @@ export default class RemotePushNotificationTask implements NotificationTask {
       {
         chargingStationID: data.chargingStationID,
         connectorID: data.connectorID,
+        deepLink: data.evseDashboardReservationURL,
       },
       severity
     );
@@ -1054,6 +1057,7 @@ export default class RemotePushNotificationTask implements NotificationTask {
       {
         chargingStationID: data.chargingStationID,
         connectorID: data.connectorID,
+        deepLink: data.evseDashboardReservationURL,
       },
       severity
     );
@@ -1084,6 +1088,7 @@ export default class RemotePushNotificationTask implements NotificationTask {
       {
         chargingStationID: data.chargingStationID,
         connectorID: data.connectorID,
+        deepLink: data.evseDashboardReservationURL,
       },
       severity
     );
