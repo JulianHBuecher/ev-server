@@ -96,43 +96,48 @@ export default class ReservationStorage {
         $in: params.types.map((t) => t),
       };
     }
-    if (
-      !Utils.isNullOrUndefined(params.dateRange?.fromDate) ||
-      !Utils.isNullOrUndefined(params.dateRange?.toDate)
-    ) {
-      const dateRange = {
-        $or: [
-          {
-            $and: [
-              { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
-              { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
-            ],
+    const dateRange = { $or: [] };
+    if (params.dateRange?.fromDate && params.dateRange?.toDate) {
+      dateRange.$or.push(
+        {
+          $and: [
+            { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
+            { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
+          ],
+        },
+        {
+          $and: [
+            { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
+            { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
+          ],
+        },
+        {
+          fromDate: {
+            $gte: Utils.convertToDate(params.dateRange.fromDate),
+            $lt: Utils.convertToDate(params.dateRange.toDate),
           },
-          {
-            $and: [
-              { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
-              { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
-            ],
+        },
+        {
+          toDate: {
+            $gte: Utils.convertToDate(params.dateRange.fromDate),
+            $lt: Utils.convertToDate(params.dateRange.toDate),
           },
-          {
-            fromDate: {
-              $gte: Utils.convertToDate(params.dateRange.fromDate),
-              $lt: Utils.convertToDate(params.dateRange.toDate),
-            },
-          },
-          {
-            toDate: {
-              $gte: Utils.convertToDate(params.dateRange.fromDate),
-              $lt: Utils.convertToDate(params.dateRange.toDate),
-            },
-          },
-        ],
-      };
-      if (filters.$and) {
-        filters.$and.push(dateRange);
-      } else {
-        filters.$and = [dateRange];
-      }
+        }
+      );
+    } else if (params.dateRange?.fromDate) {
+      dateRange.$or.push(
+        { fromDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
+        { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } }
+      );
+    } else if (params.dateRange?.toDate) {
+      dateRange.$or.push(
+        { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
+        { toDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } }
+      );
+    }
+
+    if (!Utils.isEmptyArray(dateRange.$or)) {
+      filters.$and = [dateRange];
     }
     if (params.expiryDate) {
       // Param for searching expired reservations
