@@ -2,7 +2,7 @@ import { Sort } from 'mongodb';
 
 import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
-import global, { FilterParams } from '../../types/GlobalType';
+import global, { DatabaseCount, FilterParams } from '../../types/GlobalType';
 import Reservation, { ReservationStatus, ReservationType } from '../../types/Reservation';
 import Tenant from '../../types/Tenant';
 import Constants from '../../utils/Constants';
@@ -49,6 +49,16 @@ export default class ReservationStorage {
     dbParams = Utils.cloneObject(dbParams);
     dbParams.limit = Utils.checkRecordLimit(dbParams.limit);
     dbParams.skip = Utils.checkRecordSkip(dbParams.skip);
+
+    params.withChargingStation =
+      params.withChargingStation ??
+      (!!params.siteAreaIDs ||
+        !!params.siteIDs ||
+        !!params.companyIDs ||
+        !!params.withSite ||
+        !!params.withSiteArea);
+    params.withTag = params.withTag ?? (!!params.userIDs || !!params.withUser);
+    params.withCar = params.withCar ?? !!params.carIDs;
 
     const filters: FilterParams = {};
     const aggregation = [];
@@ -130,23 +140,6 @@ export default class ReservationStorage {
       filters.expiryDate.$lte = Utils.convertToDate(params.expiryDate);
     }
 
-    const reservationsCount = await global.database
-      .getCollection<Reservation>(tenant.id, COLLECTION_NAME)
-      .countDocuments();
-
-    if (dbParams.onlyRecordCount) {
-      await Logging.traceDatabaseRequestEnd(
-        tenant,
-        MODULE_NAME,
-        METHOD_NAME,
-        startTime,
-        reservationsCount
-      );
-      return {
-        count: reservationsCount,
-        result: [],
-      };
-    }
     if (params.withCar) {
       DatabaseUtils.pushCarLookupInAggregation({
         tenantID: tenant.id,
@@ -246,7 +239,7 @@ export default class ReservationStorage {
         }
       }
     }
-    aggregation.push({ $match: filters });
+
     if (!Utils.isEmptyArray(params.userIDs)) {
       aggregation.push({
         $match: {
@@ -284,6 +277,36 @@ export default class ReservationStorage {
       });
     }
 
+    aggregation.push({ $match: filters });
+
+    // Limit records?
+    if (!dbParams.onlyRecordCount) {
+      // Always limit the nbr of record to avoid perfs issues
+      aggregation.push({ $limit: Constants.DB_RECORD_COUNT_CEIL });
+    }
+    // Count Records
+    const reservationsCountMDB = (await global.database
+      .getCollection<any>(tenant.id, COLLECTION_NAME)
+      .aggregate([...aggregation, { $count: 'count' }])
+      .toArray()) as DatabaseCount[];
+
+    if (dbParams.onlyRecordCount) {
+      await Logging.traceDatabaseRequestEnd(
+        tenant,
+        MODULE_NAME,
+        METHOD_NAME,
+        startTime,
+        reservationsCountMDB
+      );
+      return {
+        count: reservationsCountMDB.length > 0 ? reservationsCountMDB[0].count : 0,
+        result: [],
+      };
+    }
+
+    // Remove the limit
+    aggregation.pop();
+
     // Sanitize missing dbParams
     if (!dbParams.sort) {
       dbParams.sort = { expiryDate: -1 };
@@ -294,6 +317,17 @@ export default class ReservationStorage {
     if (!dbParams.limit) {
       dbParams.limit = 1;
     }
+    aggregation.push({
+      $sort: dbParams.sort,
+    });
+    // Skip
+    aggregation.push({
+      $skip: dbParams.skip,
+    });
+    // Limit
+    aggregation.push({
+      $limit: dbParams.limit,
+    });
 
     // Change ID
     DatabaseUtils.pushRenameDatabaseIDToNumber(aggregation);
@@ -309,9 +343,6 @@ export default class ReservationStorage {
     const reservations = (await global.database
       .getCollection<any>(tenant.id, COLLECTION_NAME)
       .aggregate<any>(aggregation, DatabaseUtils.buildAggregateOptions())
-      .sort(dbParams.sort as Sort)
-      .limit(dbParams.limit)
-      .skip(dbParams.skip)
       .toArray()) as Reservation[];
     await Logging.traceDatabaseRequestEnd(
       tenant,
@@ -321,7 +352,7 @@ export default class ReservationStorage {
       reservations
     );
     return {
-      count: reservations.length,
+      count: DatabaseUtils.getCountFromDatabaseCount(reservationsCountMDB[0]),
       result: reservations,
     };
   }

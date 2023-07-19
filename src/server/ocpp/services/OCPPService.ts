@@ -2946,11 +2946,6 @@ export default class OCPPService {
             withUser: true,
           }
         );
-        NotificationHelper.notifyReservedChargingStationBlocked(
-          tenant,
-          reservation.tag.user,
-          upcomingReservations[0]
-        );
         NotificationHelper.notifyReservationUpcoming(tenant, user, reservation);
       }
     } else {

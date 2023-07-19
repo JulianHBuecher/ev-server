@@ -718,7 +718,7 @@ class ReservationNotificationHelper extends NotificationHelper {
     };
     this.notifyUserOnlyOnce(
       ServerAction.RESERVATION_CHARGING_STATION_BLOCKED,
-      `rx-${reservation.id}`,
+      `rx-${reservation.id}-${reservation.chargingStationID}-${reservation.connectorID}`,
       {
         userID: user.id,
         reservationID: reservation.id,

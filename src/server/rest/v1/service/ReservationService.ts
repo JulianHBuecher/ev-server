@@ -689,8 +689,14 @@ export default class ReservationService {
     );
     if (reservation.status === ReservationStatus.IN_PROGRESS) {
       const result = await ReservationService.contactChargingStation(req, action, reservation);
-      if (result.status !== 'ACCEPTED') {
-        return;
+      if (result.status.toUpperCase() !== 'ACCEPTED') {
+        throw new AppError({
+          action: ServerAction.RESERVATION_CANCEL,
+          module: MODULE_NAME,
+          method: ReservationService.cancelReservation.name,
+          errorCode: HTTPError.RESERVATION_REJECTED_ERROR,
+          message: 'Unable to cancel reservation, charging station return rejected',
+        });
       }
     }
     reservation.status = ReservationStatus.CANCELLED;

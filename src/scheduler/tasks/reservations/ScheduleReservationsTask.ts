@@ -89,6 +89,11 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           reservation.connectorID
         );
         if (connector.status !== ChargePointStatus.AVAILABLE) {
+          NotificationHelper.notifyReservedChargingStationBlocked(
+            tenant,
+            reservation.tag.user,
+            reservation
+          );
           return;
         }
         const response = await chargingStationClient.reserveNow({
@@ -105,6 +110,7 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
               reservation.tag.user,
               reservation
             );
+            NotificationHelper.notifyReservationUpcoming(tenant, reservation.tag.user, reservation);
             await ReservationStorage.saveReservation(tenant, reservation);
           }
           await ReservationService.updateConnectorWithReservation(
