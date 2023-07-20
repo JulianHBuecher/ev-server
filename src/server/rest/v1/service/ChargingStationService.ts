@@ -1074,7 +1074,7 @@ export default class ChargingStationService {
       filteredRequest.args.carID
     );
     const response = await chargingStationClient.reserveNow(reserveNowRequest);
-    if (response.status !== 'ACCEPTED') {
+    if (response.status.toUpperCase() !== 'ACCEPTED') {
       throw new AppError({
         ...LoggingHelper.getChargingStationProperties(chargingStation),
         action,

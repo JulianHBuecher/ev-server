@@ -31,6 +31,7 @@ import Reservation, {
   ReservationType,
 } from '../../../../types/Reservation';
 import { ServerAction } from '../../../../types/Server';
+import Tag from '../../../../types/Tag';
 import Tenant, { TenantComponents } from '../../../../types/Tenant';
 import Constants from '../../../../utils/Constants';
 import I18nManager from '../../../../utils/I18nManager';
@@ -541,6 +542,7 @@ export default class ReservationService {
     // Check for another reservation already ongoing on connector
     // If they have not the same ID backend and CS are desynchronized
     const reservationOnConnector = connector.reservation;
+    let tag: Tag;
     if (
       !Utils.isNullOrUndefined(reservationOnConnector) &&
       Number(reservationOnConnector.id) !== filteredRequest.id &&
@@ -555,7 +557,7 @@ export default class ReservationService {
       });
     }
     if (!filteredRequest.idTag) {
-      const tag = await UtilsService.checkAndGetTagByVisualIDAuthorization(
+      tag = await UtilsService.checkAndGetTagByVisualIDAuthorization(
         req.tenant,
         req.user,
         filteredRequest.visualTagID,
@@ -594,7 +596,7 @@ export default class ReservationService {
       await ReservationService.preventMultipleReserveNow(
         req.tenant,
         filteredRequest.id,
-        filteredRequest.userID
+        tag.userID
       );
     }
     const response = await ReservationService.contactChargingStation(

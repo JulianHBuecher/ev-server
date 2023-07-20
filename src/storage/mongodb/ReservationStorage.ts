@@ -1,5 +1,3 @@
-import { Sort } from 'mongodb';
-
 import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { DatabaseCount, FilterParams } from '../../types/GlobalType';
