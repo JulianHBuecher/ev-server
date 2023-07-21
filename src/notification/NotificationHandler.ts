@@ -2214,6 +2214,60 @@ export default class NotificationHandler {
     }
   }
 
+  public static async sendReservationUnmetNotification(
+    tenant: Tenant,
+    notificationID: string,
+    user: User,
+    sourceData: ReservationNotification
+  ) {
+    if (tenant.id !== Constants.DEFAULT_TENANT_ID) {
+      for (const notificationSource of NotificationHandler.notificationSources) {
+        if (notificationSource.enabled) {
+          try {
+            // Check notification
+            const hasBeenNotified = await NotificationHandler.hasNotifiedSourceByID(
+              tenant,
+              notificationSource.channel,
+              notificationID
+            );
+            if (!hasBeenNotified) {
+              // Save
+              await NotificationHandler.saveNotification(
+                tenant,
+                notificationSource.channel,
+                notificationID,
+                ServerAction.RESERVATION_UNMET,
+                { user }
+              );
+              // Send
+              await notificationSource.notificationTask.sendReservationUnmetNotification(
+                sourceData,
+                user,
+                tenant,
+                NotificationSeverity.WARNING
+              );
+            } else {
+              await Logging.logDebug({
+                tenantID: tenant.id,
+                module: MODULE_NAME,
+                method: 'sendReservationUnmetNotification',
+                action: ServerAction.RESERVATION_UNMET,
+                user: user.id,
+                message: `Notification via '${notificationSource.channel}' has already been sent`,
+              });
+            }
+          } catch (error) {
+            await Logging.logActionExceptionMessage(
+              tenant.id,
+              ServerAction.RESERVATION_UNMET,
+              error
+            );
+          }
+        }
+      }
+    }
+  }
+
   private static async saveNotification(
     tenant: Tenant,
     channel: string,

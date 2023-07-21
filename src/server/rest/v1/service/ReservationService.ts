@@ -11,6 +11,7 @@ import UserStorage from '../../../../storage/mongodb/UserStorage';
 import { Action, Entity } from '../../../../types/Authorization';
 import ChargingStation, { Connector } from '../../../../types/ChargingStation';
 import { ReservationDataResult } from '../../../../types/DataResult';
+import { ActionsResponse } from '../../../../types/GlobalType';
 import { HTTPAuthError, HTTPError } from '../../../../types/HTTPError';
 import {
   OCPPCancelReservationResponse,
@@ -23,6 +24,7 @@ import {
   HttpReservationDeleteRequest,
   HttpReservationGetRequest,
   HttpReservationUpdateRequest,
+  HttpReservationsDeleteRequest,
   HttpReservationsGetRequest,
 } from '../../../../types/requests/HttpReservationRequest';
 import Reservation, {
@@ -173,6 +175,33 @@ export default class ReservationService {
     );
     await ReservationService.deleteReservation(req, action, filteredRequest, Action.DELETE);
     res.json(Constants.REST_RESPONSE_SUCCESS);
+    next();
+  }
+
+  public static async handleDeleteReservations(
+    action: ServerAction,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    UtilsService.assertComponentIsActiveFromToken(
+      req.user,
+      TenantComponents.RESERVATION,
+      Action.DELETE,
+      Entity.RESERVATION,
+      MODULE_NAME,
+      ReservationService.handleDeleteReservations.name
+    );
+    const filteredRequest = ReservationValidatorRest.getInstance().validateReservationsDeleteReq(
+      req.body
+    );
+    const result = await ReservationService.deleteReservations(
+      req,
+      action,
+      filteredRequest,
+      Action.DELETE
+    );
+    res.json({ ...result, ...Constants.REST_RESPONSE_SUCCESS });
     next();
   }
 
@@ -445,6 +474,7 @@ export default class ReservationService {
           fromDate: filteredRequest.StartDateTime ?? null,
           toDate: filteredRequest.EndDateTime ?? null,
         },
+        arrivalTime: filteredRequest.ArrivalTime ?? null,
         statuses: filteredRequest.Status ? filteredRequest.Status.split('|') : null,
         types: filteredRequest.Type ? filteredRequest.Type.split('|') : null,
         withUser: filteredRequest.WithUser,
@@ -622,6 +652,47 @@ export default class ReservationService {
     }
   }
 
+  private static async deleteReservations(
+    req: Request,
+    action: ServerAction = ServerAction.RESERVATIONS_DELETE,
+    filteredRequest: HttpReservationsDeleteRequest,
+    authAction: Action = Action.DELETE
+  ) {
+    const reservationIDsToDelete = [];
+    const result: ActionsResponse = {
+      inSuccess: 0,
+      inError: 0,
+    };
+
+    // Check dynamic auth for each transaction before initiating delete operations
+    for (const reservationID of filteredRequest.reservationIDs) {
+      await AuthorizationService.checkAndGetReservationAuthorizations(
+        req.tenant,
+        req.user,
+        { ID: reservationID },
+        authAction
+      );
+      reservationIDsToDelete.push(reservationID);
+    }
+    result.inSuccess = await ReservationStorage.deleteReservations(
+      req.tenant,
+      reservationIDsToDelete
+    );
+    await Logging.logActionsResponse(
+      req.tenant.id,
+      ServerAction.TRANSACTIONS_DELETE,
+      MODULE_NAME,
+      'deleteReservations',
+      result,
+      '{{inSuccess}} reservation(s) were successfully deleted',
+      '{{inError}} reservation(s) failed to be deleted',
+      '{{inSuccess}} reservation(s) were successfully deleted and {{inError}} failed to be deleted',
+      'No reservations have been deleted',
+      req.user
+    );
+    return result;
+  }
+
   private static async deleteReservation(
     req: Request,
     action: ServerAction = ServerAction.RESERVATION_DELETE,
@@ -776,6 +847,7 @@ export default class ReservationService {
         ServerAction.CHARGING_STATION_CANCEL_RESERVATION,
         ServerAction.RESERVATION_CANCEL,
         ServerAction.RESERVATION_DELETE,
+        ServerAction.RESERVATION_UNMET,
       ].includes(action)
     ) {
       response = await chargingStationClient.cancelReservation({
@@ -839,7 +911,7 @@ export default class ReservationService {
           getDateCell(reservation.fromDate, i18nManager),
           getDateCell(reservation.toDate, i18nManager),
           getDateCell(reservation.expiryDate, i18nManager),
-          reservation.arrivalTime ? getDateCell(reservation.arrivalTime, i18nManager) : '',
+          reservation.arrivalTime ? getDateCell(reservation.arrivalTime as Date, i18nManager) : '',
           reservation.idTag,
           reservation.parentIdTag ?? '',
           reservation.carID ?? '',

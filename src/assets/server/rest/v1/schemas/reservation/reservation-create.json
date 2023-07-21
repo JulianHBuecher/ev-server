@@ -21,6 +21,12 @@
     "expiryDate": {
       "$ref": "reservation#/definitions/expiryDate"
     },
+    "arrivalTime": {
+      "$ref": "reservation#/definitions/arrivalTime"
+    },
+    "departureTime": {
+      "$ref": "reservation#/definitions/departureTime"
+    },
     "visualTagID": {
       "$ref": "tag#/definitions/visualID"
     },

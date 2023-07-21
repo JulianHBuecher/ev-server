@@ -19,6 +19,7 @@ export default class ReservationRouter {
     this.buildRouteReservationDelete();
     this.buildRouteReservationsExport();
     this.buildRouteReservationCancel();
+    this.buildRouteReservationsDelete();
     // this.buildRouteReservationsImport();
     return this.router;
   }
@@ -92,6 +93,21 @@ export default class ReservationRouter {
         req.query.ID = req.params.id;
         void RouterUtils.handleRestServerAction(
           ReservationService.handleDeleteReservation.bind(this),
+          ServerAction.RESERVATION_DELETE,
+          req,
+          res,
+          next
+        );
+      }
+    );
+  }
+
+  private buildRouteReservationsDelete(): void {
+    this.router.delete(
+      `/${RESTServerRoute.REST_RESERVATIONS}`,
+      (req: Request, res: Response, next: NextFunction) => {
+        void RouterUtils.handleRestServerAction(
+          ReservationService.handleDeleteReservations.bind(this),
           ServerAction.RESERVATION_DELETE,
           req,
           res,

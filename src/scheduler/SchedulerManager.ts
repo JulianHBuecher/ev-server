@@ -32,6 +32,7 @@ import OCPIPushEVSEStatusesTask from './tasks/ocpi/OCPIPushEVSEStatusesTask';
 import OCPIPushTokensTask from './tasks/ocpi/OCPIPushTokensTask';
 import OICPPushEvseDataTask from './tasks/oicp/OICPPushEvseDataTask';
 import OICPPushEvseStatusTask from './tasks/oicp/OICPPushEvseStatusTask';
+import CancelUnmetReservationsTask from './tasks/reservations/CancelUnmetReservationsTask';
 import CheckReservationStatusTask from './tasks/reservations/CheckReservationStatusTask';
 import SynchronizeReservationsTask from './tasks/reservations/ScheduleReservationsTask';
 import SynchronizeCarsTask from './tasks/SynchronizeCarsTask';
@@ -153,6 +154,8 @@ export default class SchedulerManager {
         return new CheckReservationStatusTask();
       case 'SynchronizeReservationsTask':
         return new SynchronizeReservationsTask();
+      case 'CancelUnmetReservationsTask':
+        return new CancelUnmetReservationsTask();
       default:
         await Logging.logError({
           tenantID: Constants.DEFAULT_TENANT_ID,

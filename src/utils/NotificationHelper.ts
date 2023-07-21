@@ -178,6 +178,16 @@ export default class NotificationHelper {
     }, 500);
   }
 
+  public static notifyReservationUnmet(tenant: Tenant, user: User, reservation: Reservation) {
+    setTimeout(() => {
+      NotificationHelper.getReservationNotificationHelper(
+        tenant,
+        user,
+        reservation
+      ).notifyReservationUnmet();
+    }, 500);
+  }
+
   private static getSessionNotificationHelper(
     tenant: Tenant,
     transaction: Transaction,
@@ -784,7 +794,7 @@ class ReservationNotificationHelper extends NotificationHelper {
       evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
     };
     this.notifyUserOnlyOnce(
-      ServerAction.RESERVATION_UPCOMING,
+      ServerAction.RESERVATION_CANCEL,
       `rx-${reservation.id}`,
       {
         userID: user.id,
@@ -793,6 +803,34 @@ class ReservationNotificationHelper extends NotificationHelper {
       (channel: NotificationSource) => {
         channel.notificationTask
           .sendReservationCancelledNotification(data, user, tenant, NotificationSeverity.INFO)
+          .catch((error) => {
+            Logging.logPromiseError(error, tenant?.id);
+          });
+      }
+    );
+  }
+
+  public notifyReservationUnmet() {
+    const tenant = this.tenant;
+    const reservation = this.reservation;
+    const user = this.user;
+    // Notification data
+    const data: ReservationNotification = {
+      user: user,
+      chargingStationID: reservation.chargingStationID,
+      connectorID: Utils.getConnectorLetterFromConnectorID(reservation.connectorID),
+      evseDashboardReservationURL: Utils.buildEvseReservationURL(tenant.subdomain),
+    };
+    this.notifyUserOnlyOnce(
+      ServerAction.RESERVATION_UNMET,
+      `rx-${reservation.id}`,
+      {
+        userID: user.id,
+        reservationID: reservation.id,
+      },
+      (channel: NotificationSource) => {
+        channel.notificationTask
+          .sendReservationUnmetNotification(data, user, tenant, NotificationSeverity.WARNING)
           .catch((error) => {
             Logging.logPromiseError(error, tenant?.id);
           });

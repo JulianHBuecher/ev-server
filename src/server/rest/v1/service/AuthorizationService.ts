@@ -3987,6 +3987,13 @@ export default class AuthorizationService {
       Action.EXPORT,
       authorizationFilter
     );
+    reservations.canDelete = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.RESERVATION,
+      Action.DELETE,
+      authorizationFilter
+    );
     reservations.canListChargingStations = await AuthorizationService.canPerformAuthorizationAction(
       tenant,
       userToken,

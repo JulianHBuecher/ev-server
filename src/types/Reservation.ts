@@ -13,7 +13,8 @@ export default interface Reservation extends CreatedUpdatedProps, ReservationAut
   fromDate?: Date;
   toDate?: Date;
   expiryDate: Date;
-  arrivalTime?: Date;
+  arrivalTime?: Date | TimeObject;
+  departureTime?: Date | TimeObject;
   idTag: string;
   visualTagID?: string;
   tag?: Tag;
@@ -30,6 +31,7 @@ export enum ReservationStatus {
   IN_PROGRESS = 'reservation_in_progress',
   CANCELLED = 'reservation_cancelled',
   EXPIRED = 'reservation_expired',
+  UNMET = 'reservation_unmet',
 }
 
 export enum ReservationType {
@@ -56,7 +58,8 @@ export interface ImportedReservation {
   fromDate: Date;
   toDate: Date;
   expiryDate: Date;
-  arrivalTime?: Date;
+  arrivalTime?: Date | TimeObject;
+  departureTime?: Date | TimeObject;
   idTag: string;
   parentIdTag?: string;
   carID?: string;
@@ -64,4 +67,9 @@ export interface ImportedReservation {
   importedData?: {
     autoActivateReservationAtImport: boolean;
   };
+}
+
+export interface TimeObject {
+  hour: number;
+  minute: number;
 }

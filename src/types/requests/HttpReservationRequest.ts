@@ -1,4 +1,4 @@
-import { ReservationStatus, ReservationStatusEnum, ReservationType } from '../Reservation';
+import { ReservationStatusEnum, ReservationType } from '../Reservation';
 import HttpByIDRequest from './HttpByIDRequest';
 import HttpDatabaseRequest from './HttpDatabaseRequest';
 
@@ -21,6 +21,8 @@ export interface HttpReservationsGetRequest extends HttpDatabaseRequest {
   CompanyID: string;
   StartDateTime: Date;
   EndDateTime: Date;
+  ArrivalTime?: Date;
+  DepartureTime?: Date;
   Status: ReservationStatusEnum;
   Type: ReservationType;
   WithUser: boolean;
@@ -40,6 +42,7 @@ export interface HttpReservationCreateRequest {
   toDate: Date;
   expiryDate: Date;
   arrivalTime?: Date;
+  departureTime?: Date;
   idTag: string;
   visualTagID: string;
   parentIdTag?: string;
@@ -57,6 +60,7 @@ export interface HttpReservationUpdateRequest {
   toDate: Date;
   expiryDate: Date;
   arrivalTime?: Date;
+  departureTime?: Date;
   idTag: string;
   visualTagID: string;
   parentIdTag?: string;
@@ -68,6 +72,10 @@ export interface HttpReservationUpdateRequest {
 
 export interface HttpReservationDeleteRequest {
   ID: number;
+}
+
+export interface HttpReservationsDeleteRequest {
+  reservationIDs: number[];
 }
 
 export interface HttpReservationCancelRequest {

@@ -81,6 +81,7 @@ export enum UserNotificationType {
   RESERVATION_UPCOMING_NOTIFICATION = 'ReservationUpcomingNotification',
   RESERVATION_CHARGING_STATION_BLOCKED = 'ReservationChargingStationBlocked',
   RESERVATION_CANCELLED_NOTIFICATION = 'ReservationCancelledNotification',
+  RESERVATION_UNMET_NOTIFICATION = 'ReservationUnmetNotification',
 }
 
 export enum NotificationSeverity {

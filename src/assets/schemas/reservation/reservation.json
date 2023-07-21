@@ -35,6 +35,13 @@
       "sanitize": "mongo",
       "nullable": true
     },
+    "departureTime": {
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo",
+      "nullable": true
+    },
     "idTag": {
       "$ref": "tag#/definitions/id"
     },
@@ -53,8 +60,8 @@
       "enum": ["planned_reservation", "reserve_now"]
     },
     "status": {
-      "type": ["string", "null"],
-      "pattern": "^(([^|]*)(\\||[^|])*)?$",
+      "type": ["string"],
+      "pattern": "^((reservation_done|reservation_scheduled|reservation_in_progress|reservation_cancelled|reservation_expired|reservation_unmet)(\\||reservation_done|reservation_scheduled|reservation_in_progress|reservation_cancelled|reservation_expired|reservation_unmet)*)?$",
       "nullable": true
     }
   },

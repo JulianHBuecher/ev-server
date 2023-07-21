@@ -928,8 +928,8 @@ export default class RemotePushNotificationTask implements NotificationTask {
     // Set the locale
     const i18nManager = I18nManager.getInstanceForLocale(user.locale);
     // Get Message Text
-    const title = i18nManager.translate('notifications.reservationStatusChanged.title');
-    const body = i18nManager.translate('notifications.reservationStatusChanged.body', {
+    const title = i18nManager.translate('notifications.reservationStatusChangedNotification.title');
+    const body = i18nManager.translate('notifications.reservationStatusChangedNotification.body', {
       chargingStationID: data.chargingStationID,
       connectorID: data.connectorID,
       reservationStatus: data.reservationStatus,
@@ -1082,6 +1082,37 @@ export default class RemotePushNotificationTask implements NotificationTask {
     await this.sendRemotePushNotificationToUser(
       tenant,
       UserNotificationType.RESERVATION_CANCELLED_NOTIFICATION,
+      title,
+      body,
+      user,
+      {
+        chargingStationID: data.chargingStationID,
+        connectorID: data.connectorID,
+        deepLink: data.evseDashboardReservationURL,
+      },
+      severity
+    );
+    return {};
+  }
+
+  public async sendReservationUnmetNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    // Set the locale
+    const i18nManager = I18nManager.getInstanceForLocale(user.locale);
+    // Get Message Text
+    const title = i18nManager.translate('notifications.reservationUnmetNotification.title');
+    const body = i18nManager.translate('notifications.reservationUnmetNotification.body', {
+      chargingStationID: data.chargingStationID,
+      connectorID: data.connectorID,
+    });
+    // Send Notification
+    await this.sendRemotePushNotificationToUser(
+      tenant,
+      UserNotificationType.RESERVATION_UNMET_NOTIFICATION,
       title,
       body,
       user,

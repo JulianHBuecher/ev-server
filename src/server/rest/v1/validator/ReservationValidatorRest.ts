@@ -7,6 +7,7 @@ import {
   HttpReservationDeleteRequest,
   HttpReservationGetRequest,
   HttpReservationUpdateRequest,
+  HttpReservationsDeleteRequest,
   HttpReservationsGetRequest,
 } from '../../../../types/requests/HttpReservationRequest';
 import Schema from '../../../../types/validator/Schema';
@@ -49,6 +50,13 @@ export default class ReservationValidatorRest extends SchemaValidator {
     )
   );
 
+  private reservationsDelete: Schema = JSON.parse(
+    fs.readFileSync(
+      `${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservations-delete.json`,
+      'utf8'
+    )
+  );
+
   private reservationCancel: Schema = JSON.parse(
     fs.readFileSync(
       `${global.appRoot}/assets/server/rest/v1/schemas/reservation/reservation-cancel.json`,
@@ -85,6 +93,12 @@ export default class ReservationValidatorRest extends SchemaValidator {
 
   public validateReservationDeleteReq(data: Record<string, unknown>): HttpReservationDeleteRequest {
     return this.validate(this.reservationDelete, data);
+  }
+
+  public validateReservationsDeleteReq(
+    data: Record<string, unknown>
+  ): HttpReservationsDeleteRequest {
+    return this.validate(this.reservationsDelete, data);
   }
 
   public validateReservationCancelReq(data: Record<string, unknown>): HttpReservationCancelRequest {

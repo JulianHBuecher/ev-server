@@ -185,7 +185,7 @@
       "title": "Reservierte Ladestation blockiert",
       "body": "An Ihrer derzeitig reservierten Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' wurde eine Ladevorgang gestartet."
     },
-    "reservationStatusChanged": {
+    "reservationStatusChangedNotification": {
       "title": "Status der Reservierung geändert",
       "body": "Der Status Ihrer Reservierung für die Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' hat sich geändert.",
       "status": {
@@ -193,8 +193,13 @@
         "reservation_scheduled": "Reservierung eingeplant",
         "reservation_in_progress": "Reservierung laufend",
         "reservation_cancelled": "Reservierung storniert",
-        "reservation_expired": "Reservierung abgelaufen"
+        "reservation_expired": "Reservierung abgelaufen",
+        "reservation_unmet": "Reservierung nicht wahrgenommen"
       }
+    },
+    "reservationUnmetNotification": {
+      "title": "Reservierung nicht wahrgenommen",
+      "body": "Die Reservierung an der Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' wurde aufgrund Nichterscheinens innerhalb von 15 Minuten nach Start der Reservierung abgebrochen."
     }
   },
   "siteArea": "Standortbereich",
@@ -680,6 +685,16 @@
       "text": [
         "An Ihrer derzeitig reservierten Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' wurde eine Ladevorgang gestartet.",
         "Bei Möglichkeit ziehen Sie bitte eine andere Ladestation beziehungsweise einen anderen Anschluss für Ihre Reservierung in Betracht.",
+        "",
+        "Für weiterführende Informationen bezüglich der Auswahl anderer Ladestationen/Anschlüsse, folgen Sie dem unten stehenden Link."
+      ]
+    },
+    "reservation-unmet": {
+      "title": "Reservierung nicht wahrgenommen",
+      "buttonText": "Reservierung anzeigen",
+      "text": [
+        "Die Reservierung der Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' wurde aufgrund Nichterscheinens nach 15 Minuten abgebrochen.",
+        "Wählen Sie für Ihre nächste Reservierung einen passenderen Reservierungszeitraum.",
         "",
         "Für weiterführende Informationen bezüglich der Auswahl anderer Ladestationen/Anschlüsse, folgen Sie dem unten stehenden Link."
       ]

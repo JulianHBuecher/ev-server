@@ -209,6 +209,7 @@ export interface StatisticDataResult extends DataResult<any> {
 export interface ReservationDataResult extends DataResult<Reservation> {
   canCreate?: boolean;
   canExport?: boolean;
+  canDelete?: boolean;
   canListUsers?: boolean;
   canListSites?: boolean;
   canListSiteAreas?: boolean;

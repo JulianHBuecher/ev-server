@@ -2125,6 +2125,10 @@ export default class Utils {
     return `${hours} h ${minutes.format('mm')} min`;
   }
 
+  public static buildTimeObject(hour: number, minute: number, date?: Date): Date {
+    return moment({ hour, minute }).toDate();
+  }
+
   private static hashCode(s: string): number {
     let hash = 0,
       i = 0;

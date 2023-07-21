@@ -556,7 +556,7 @@ export default class EMailNotificationTask implements NotificationTask {
     data.buttonUrl = data.evseDashboardReservationURL;
     const i18nInstance = I18nManager.getInstanceForLocale(user.locale);
     data.reservationStatus = i18nInstance.translate(
-      `notifications.reservationStatusChanged.status.${data.reservationStatus}`
+      `notifications.reservationStatusChangedNotification.status.${data.reservationStatus}`
     );
     return await this.prepareAndSendEmail(
       'reservation-status-notification',
@@ -628,6 +628,16 @@ export default class EMailNotificationTask implements NotificationTask {
   ): Promise<NotificationResult> {
     data.buttonUrl = data.evseDashboardReservationURL;
     return await this.prepareAndSendEmail('reservation-cancelled', data, user, tenant, severity);
+  }
+
+  public async sendReservationUnmetNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult> {
+    data.buttonUrl = data.evseDashboardReservationURL;
+    return await this.prepareAndSendEmail('reservation-unmet', data, user, tenant, severity);
   }
 
   private async sendEmail(

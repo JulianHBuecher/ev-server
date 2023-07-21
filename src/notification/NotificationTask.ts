@@ -261,4 +261,10 @@ export default interface NotificationTask {
     tenant: Tenant,
     severity: NotificationSeverity
   ): Promise<NotificationResult>;
+  sendReservationUnmetNotification(
+    data: ReservationNotification,
+    user: User,
+    tenant: Tenant,
+    severity: NotificationSeverity
+  ): Promise<NotificationResult>;
 }

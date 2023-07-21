@@ -502,6 +502,7 @@ export enum ServerAction {
   RESERVATION_CREATE = 'ReservationCreate',
   RESERVATION_UPDATE = 'ReservationUpdate',
   RESERVATION_DELETE = 'ReservationDelete',
+  RESERVATIONS_DELETE = 'ReservationsDelete',
   RESERVATIONS_EXPORT = 'ReservationsExport',
   RESERVATIONS_IMPORT = 'ReservationsImport',
   RESERVATION_CANCEL = 'ReservationCancel',
@@ -510,6 +511,7 @@ export enum ServerAction {
   RESERVATION_STATUS_TRANSITION = 'ReservationStatusTransition',
   RESERVATION_UPCOMING = 'ReservationUpcoming',
   RESERVATION_CHARGING_STATION_BLOCKED = 'ReservationChargingStationBlocked',
+  RESERVATION_UNMET = 'ReservationUnmet',
 }
 
 // RESTful API
