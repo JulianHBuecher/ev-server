@@ -841,9 +841,11 @@ export default class ReservationService {
       moment().isBetween(reservation.fromDate, reservation.toDate)
     ) {
       if (
-        [ServerAction.CHARGING_STATION_RESERVE_NOW, ServerAction.RESERVATION_CREATE].includes(
-          action
-        )
+        [
+          ServerAction.CHARGING_STATION_RESERVE_NOW,
+          ServerAction.RESERVATION_CREATE,
+          ServerAction.RESERVATION_UPDATE,
+        ].includes(action)
       ) {
         response = await chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
