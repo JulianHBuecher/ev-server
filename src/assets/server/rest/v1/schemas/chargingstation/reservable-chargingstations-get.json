@@ -15,6 +15,18 @@
       "customType": "date",
       "sanitize": "mongo"
     },
+    "ArrivalTime": {
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
+    },
+    "DepartureTime": {
+      "type": ["string", "object"],
+      "format": "date-time",
+      "customType": "date",
+      "sanitize": "mongo"
+    },
     "Issuer": {
       "type": "boolean",
       "sanitize": "mongo"
@@ -28,5 +40,5 @@
       "sanitize": "mongo"
     }
   },
-  "required": ["FromDate", "ToDate"]
+  "required": ["FromDate", "ToDate", "ArrivalTime", "DepartureTime"]
 }

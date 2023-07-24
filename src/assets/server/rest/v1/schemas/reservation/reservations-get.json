@@ -37,6 +37,12 @@
     "EndDateTime": {
       "$ref": "reservation#/definitions/toDate"
     },
+    "ArrivalTime": {
+      "$ref": "reservation#/definitions/arrivalTime"
+    },
+    "DepartureTime": {
+      "$ref": "reservation#/definitions/departureTime"
+    },
     "Status": {
       "$ref": "reservation#/definitions/status"
     },

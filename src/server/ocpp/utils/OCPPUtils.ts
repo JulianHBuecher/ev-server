@@ -2077,7 +2077,7 @@ export default class OCPPUtils {
       filteredRequest.args.idTag = tag.id;
     }
     return {
-      reservationId: filteredRequest.args.reservationId,
+      reservationId: Utils.getRandomIntSafe(),
       connectorId: filteredRequest.args.connectorId,
       expiryDate: filteredRequest.args.expiryDate,
       idTag: filteredRequest.args.idTag,

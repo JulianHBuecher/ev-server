@@ -4113,6 +4113,15 @@ export default class AuthorizationService {
       Action.LIST,
       authorizationFilter
     );
+    reservation.canCancelReservation = await AuthorizationService.canPerformAuthorizationAction(
+      tenant,
+      userToken,
+      Entity.RESERVATION,
+      Action.CANCEL_RESERVATION,
+      authorizationFilter,
+      { ReservationID: reservation.id },
+      reservation
+    );
     // Optimize data over the net
     Utils.removeCanPropertiesWithFalseValue(reservation);
   }

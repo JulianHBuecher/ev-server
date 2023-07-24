@@ -43,5 +43,5 @@
       "$ref": "reservation#/definitions/type"
     }
   },
-  "required": ["id", "chargingStationID", "connectorID", "visualTagID", "expiryDate", "type"]
+  "required": ["chargingStationID", "connectorID", "visualTagID", "expiryDate", "type"]
 }

@@ -15,6 +15,14 @@
       "type": "boolean",
       "sanitize": "mongo"
     },
+    "WithSiteArea": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
+    "WithSite": {
+      "type": "boolean",
+      "sanitize": "mongo"
+    },
     "WithCar": {
       "type": "boolean",
       "sanitize": "mongo"

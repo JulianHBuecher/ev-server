@@ -1,14 +1,14 @@
 import { AggregateOptions, ObjectId } from 'mongodb';
-import { ChargePointStatus, OCPPFirmwareStatus } from '../../types/ocpp/OCPPServer';
 
 import BackendError from '../../exception/BackendError';
-import Configuration from '../../utils/Configuration';
-import Constants from '../../utils/Constants';
-import { DatabaseCount } from '../../types/GlobalType';
 import DbLookup from '../../types/database/DbLookup';
+import { DatabaseCount } from '../../types/GlobalType';
+import { ChargePointStatus, OCPPFirmwareStatus } from '../../types/ocpp/OCPPServer';
 import Tenant from '../../types/Tenant';
 import User from '../../types/User';
 import UserToken from '../../types/UserToken';
+import Configuration from '../../utils/Configuration';
+import Constants from '../../utils/Constants';
 import Utils from '../../utils/Utils';
 
 const FIXED_COLLECTIONS: string[] = ['tenants', 'migrations'];
@@ -931,6 +931,26 @@ export default class DatabaseUtils {
       },
       additionalPipeline
     );
+  }
+
+  public static pushDateToTimeProjection(
+    aggregation: any[],
+    fieldNames: Map<string, string>,
+    format = '%H:%M',
+    timezone = 'CET'
+  ) {
+    const projection = {
+      $addFields: {},
+    };
+
+    for (const [fieldName, mappedFieldName] of fieldNames) {
+      projection.$addFields[`${fieldName}`] = {
+        $dateToString: { format: format, date: `$${mappedFieldName}`, timezone: timezone },
+      };
+    }
+    if (!Utils.isEmptyJSon(projection.$addFields)) {
+      aggregation.push(projection);
+    }
   }
 
   // Temporary hack to fix user Id saving. fix all this when user is typed...

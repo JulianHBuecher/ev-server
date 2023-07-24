@@ -13,8 +13,8 @@ export default interface Reservation extends CreatedUpdatedProps, ReservationAut
   fromDate?: Date;
   toDate?: Date;
   expiryDate: Date;
-  arrivalTime?: Date | TimeObject;
-  departureTime?: Date | TimeObject;
+  arrivalTime?: Date | string;
+  departureTime?: Date | string;
   idTag: string;
   visualTagID?: string;
   tag?: Tag;
@@ -58,8 +58,8 @@ export interface ImportedReservation {
   fromDate: Date;
   toDate: Date;
   expiryDate: Date;
-  arrivalTime?: Date | TimeObject;
-  departureTime?: Date | TimeObject;
+  arrivalTime?: Date;
+  departureTime?: Date;
   idTag: string;
   parentIdTag?: string;
   carID?: string;

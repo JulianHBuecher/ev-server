@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 import DbParams from '../../types/database/DbParams';
 import { ReservationDataResult } from '../../types/DataResult';
 import global, { DatabaseCount, FilterParams } from '../../types/GlobalType';
@@ -21,12 +23,12 @@ export default class ReservationStorage {
       chargingStationIDs?: string[];
       connectorIDs?: string[];
       userIDs?: string[];
-      carIDs?: string[];
       siteIDs?: string[];
       siteAreaIDs?: string[];
       companyIDs?: string[];
-      dateRange?: { fromDate: Date; toDate: Date };
+      dateRange?: { fromDate?: Date; toDate?: Date };
       expiryDate?: Date;
+      slot?: { arrivalTime?: Date; departureTime?: Date };
       statuses?: string[];
       types?: string[];
       withUser?: boolean;
@@ -56,7 +58,6 @@ export default class ReservationStorage {
         !!params.withSite ||
         !!params.withSiteArea);
     params.withTag = params.withTag ?? (!!params.userIDs || !!params.withUser);
-    params.withCar = params.withCar ?? !!params.carIDs;
 
     const filters: FilterParams = {};
     const aggregation = [];
@@ -83,9 +84,6 @@ export default class ReservationStorage {
         $in: params.connectorIDs.map((connectorID) => Utils.convertToInt(connectorID)),
       };
     }
-    if (!Utils.isEmptyArray(params.carIDs)) {
-      filters.carID = { $in: params.carIDs.map((carID) => DatabaseUtils.convertToObjectID(carID)) };
-    }
     if (!Utils.isNullOrUndefined(params.statuses)) {
       filters.status = { $in: params.statuses.map((status) => status) };
     }
@@ -94,53 +92,43 @@ export default class ReservationStorage {
         $in: params.types.map((t) => t),
       };
     }
-    const dateRange = { $or: [] };
-    if (params.dateRange?.fromDate && params.dateRange?.toDate) {
-      dateRange.$or.push(
-        {
-          $and: [
-            { fromDate: { $lte: Utils.convertToDate(params.dateRange.fromDate) } },
-            { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
-          ],
-        },
-        {
-          $and: [
-            { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
-            { toDate: { $gte: Utils.convertToDate(params.dateRange.toDate) } },
-          ],
-        },
-        {
-          fromDate: {
-            $gte: Utils.convertToDate(params.dateRange.fromDate),
-            $lt: Utils.convertToDate(params.dateRange.toDate),
-          },
-        },
-        {
-          toDate: {
-            $gte: Utils.convertToDate(params.dateRange.fromDate),
-            $lt: Utils.convertToDate(params.dateRange.toDate),
-          },
-        }
+
+    const dateRange = ReservationStorage.generateDateRangeFilter(
+      'fromDate',
+      moment(params.dateRange?.fromDate ?? '').toDate(),
+      'toDate',
+      moment(params.dateRange?.toDate ?? '').toDate()
+    );
+    const timeRange = ReservationStorage.generateDateRangeFilter(
+      'formattedArrivalTime',
+      moment(params.slot?.arrivalTime ?? '').format('HH:mm'),
+      'formattedDepartureTime',
+      moment(params.slot?.departureTime ?? '').format('HH:mm'),
+      'HH:mm'
+    );
+    const dateTimeRange: FilterParams = { $and: [] };
+    if (!Utils.isEmptyArray(dateRange.$or)) {
+      dateTimeRange.$and.push(dateRange);
+    }
+    if (!Utils.isEmptyArray(timeRange.$or)) {
+      // Date Conversion
+      DatabaseUtils.pushDateToTimeProjection(
+        aggregation,
+        new Map([
+          ['formattedArrivalTime', 'arrivalTime'],
+          ['formattedDepartureTime', 'departureTime'],
+        ])
       );
-    } else if (params.dateRange?.fromDate) {
-      dateRange.$or.push(
-        { fromDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } },
-        { toDate: { $gte: Utils.convertToDate(params.dateRange.fromDate) } }
-      );
-    } else if (params.dateRange?.toDate) {
-      dateRange.$or.push(
-        { fromDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } },
-        { toDate: { $lte: Utils.convertToDate(params.dateRange.toDate) } }
-      );
+      dateTimeRange.$and.push(timeRange);
+    }
+    if (!Utils.isEmptyArray(dateTimeRange.$and)) {
+      filters.$and = dateTimeRange.$and;
     }
 
-    if (!Utils.isEmptyArray(dateRange.$or)) {
-      filters.$and = [dateRange];
-    }
     if (params.expiryDate) {
       // Param for searching expired reservations
       filters.expiryDate = {};
-      filters.expiryDate.$lte = Utils.convertToDate(params.expiryDate);
+      filters.expiryDate.$lte = moment(params.expiryDate).toDate();
     }
 
     if (params.withCar) {
@@ -413,6 +401,8 @@ export default class ReservationStorage {
       fromDate: reservation.fromDate,
       toDate: reservation.toDate,
       expiryDate: reservation.expiryDate,
+      arrivalTime: reservation.arrivalTime,
+      departureTime: reservation.departureTime,
       idTag: reservation.idTag,
       parentIdTag: reservation.parentIdTag,
       carID: reservation.carID ? DatabaseUtils.convertToObjectID(reservation.carID) : null,
@@ -504,6 +494,8 @@ export default class ReservationStorage {
     tenant: Tenant,
     fromDate: Date,
     toDate: Date,
+    arrivalTime?: Date,
+    departureTime?: Date,
     expiryDate?: Date
   ): Promise<Reservation[]> {
     const startTime = Logging.traceDatabaseRequestStart();
@@ -511,7 +503,8 @@ export default class ReservationStorage {
     const reservationsInRange = await ReservationStorage.getReservations(
       tenant,
       {
-        dateRange: { fromDate: fromDate, toDate: toDate },
+        dateRange: { fromDate, toDate },
+        slot: { arrivalTime, departureTime },
       },
       Constants.DB_PARAMS_MAX_LIMIT
     );
@@ -543,5 +536,71 @@ export default class ReservationStorage {
       Constants.DB_PARAMS_MAX_LIMIT
     );
     return reservations.result;
+  }
+
+  public static async deleteReservations(
+    tenant: Tenant,
+    reservationIDs: number[]
+  ): Promise<number> {
+    const startTime = Logging.traceDatabaseRequestStart();
+    DatabaseUtils.checkTenantObject(tenant);
+    // Delete
+    const result = await global.database
+      .getCollection<any>(tenant.id, COLLECTION_NAME)
+      .deleteMany({ _id: { $in: reservationIDs } });
+    await Logging.traceDatabaseRequestEnd(tenant, MODULE_NAME, 'deleteReservations', startTime, {
+      reservationIDs,
+    });
+    return result.deletedCount;
+  }
+
+  private static generateDateRangeFilter(
+    lowerBoundName: string,
+    lowerBoundValue: Date | string,
+    upperBoundName: string,
+    upperBoundValue: Date | string,
+    format?: string
+  ) {
+    const dateRange: FilterParams = {};
+    dateRange.$or = [];
+    if (moment(lowerBoundValue, format).isValid() && moment(upperBoundValue, format).isValid()) {
+      dateRange.$or.push(
+        {
+          $and: [
+            { [`${lowerBoundName}`]: { $lte: lowerBoundValue } },
+            { [`${upperBoundName}`]: { $gte: lowerBoundValue } },
+          ],
+        },
+        {
+          $and: [
+            { [`${lowerBoundName}`]: { $lte: upperBoundValue } },
+            { [`${upperBoundName}`]: { $gte: upperBoundValue } },
+          ],
+        },
+        {
+          [`${lowerBoundName}`]: {
+            $gte: lowerBoundValue,
+            $lt: upperBoundValue,
+          },
+        },
+        {
+          [`${upperBoundName}`]: {
+            $gte: lowerBoundValue,
+            $lt: upperBoundValue,
+          },
+        }
+      );
+    } else if (moment(lowerBoundValue, format).isValid()) {
+      dateRange.$or.push(
+        { [`${lowerBoundName}`]: { $gte: lowerBoundValue } },
+        { [`${upperBoundName}`]: { $gte: lowerBoundValue } }
+      );
+    } else if (moment(upperBoundValue, format).isValid()) {
+      dateRange.$or.push(
+        { [`${lowerBoundName}`]: { $lte: upperBoundValue } },
+        { [`${upperBoundName}`]: { $lte: upperBoundValue } }
+      );
+    }
+    return dateRange;
   }
 }

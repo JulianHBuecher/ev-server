@@ -578,5 +578,6 @@ export default class Constants {
       { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.EXPIRED },
       { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.UNMET },
       { from: ReservationStatus.IN_PROGRESS, to: ReservationStatus.DONE },
+      { from: ReservationStatus.UNMET, to: ReservationStatus.IN_PROGRESS },
     ]);
 }

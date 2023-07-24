@@ -45,7 +45,10 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
             withUser: true,
             dateRange: {
               fromDate: moment().toDate(),
-              toDate: moment().add(15, 'minutes').toDate(),
+            },
+            slot: {
+              arrivalTime: moment().toDate(),
+              departureTime: moment().add(15, 'minutes').toDate(),
             },
             statuses: [ReservationStatus.SCHEDULED],
           },
@@ -55,6 +58,10 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           tenant,
           {
             withChargingStation: true,
+            slot: {
+              arrivalTime: moment().toDate(),
+              departureTime: moment().add(15, 'minutes').toDate(),
+            },
             statuses: [ReservationStatus.IN_PROGRESS],
           },
           Constants.DB_PARAMS_MAX_LIMIT
@@ -78,8 +85,6 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
   private async synchronizeWithChargingStation(reservations: Reservation[], tenant: Tenant) {
     if (!Utils.isEmptyArray(reservations)) {
       for (const reservation of reservations) {
-        const oldStatus = reservation.status;
-        reservation.status = ReservationStatus.IN_PROGRESS;
         const chargingStationClient = await ChargingStationClientFactory.getChargingStationClient(
           tenant,
           reservation.chargingStation
@@ -88,22 +93,22 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           reservation.chargingStation,
           reservation.connectorID
         );
-        if (connector.status !== ChargePointStatus.AVAILABLE) {
-          NotificationHelper.notifyReservedChargingStationBlocked(
-            tenant,
-            reservation.tag.user,
-            reservation
-          );
+        if (connector.currentTransactionID && connector.currentTagID !== reservation.idTag) {
+          await chargingStationClient.remoteStopTransaction({
+            transactionId: connector.currentTransactionID,
+          });
           return;
         }
         const response = await chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
-          expiryDate: reservation.expiryDate ?? reservation.toDate,
+          expiryDate: Utils.buildDateTimeObject(moment().toDate(), reservation.departureTime),
           idTag: reservation.idTag,
           reservationId: reservation.id,
           parentIdTag: reservation.parentIdTag ?? '',
         });
         if (response.status.toUpperCase() === 'ACCEPTED') {
+          const oldStatus = reservation.status;
+          reservation.status = ReservationStatus.IN_PROGRESS;
           if (oldStatus !== reservation.status) {
             NotificationHelper.notifyReservationStatusChanged(
               tenant,

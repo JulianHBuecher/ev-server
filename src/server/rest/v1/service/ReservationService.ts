@@ -314,7 +314,9 @@ export default class ReservationService {
     const reservationsInRange = await ReservationStorage.getReservationsByDate(
       tenant,
       reservation.fromDate,
-      reservation.toDate
+      reservation.toDate,
+      reservation.arrivalTime as Date,
+      reservation.departureTime as Date
     );
     const collisions = reservationsInRange.filter(
       (r) =>
@@ -416,6 +418,8 @@ export default class ReservationService {
         ...additionalFilters,
         ...authorizations.filters,
         withChargingStation: filteredRequest.WithChargingStation,
+        withSite: filteredRequest.WithSite,
+        withSiteArea: filteredRequest.WithSiteArea,
         withTag: filteredRequest.WithTag,
         withCar: filteredRequest.WithCar,
         withUser: filteredRequest.WithUser,
@@ -466,7 +470,6 @@ export default class ReservationService {
           : null,
         connectorIDs: filteredRequest.ConnectorID ? filteredRequest.ConnectorID.split('|') : null,
         userIDs: filteredRequest.UserID ? filteredRequest.UserID.split('|') : null,
-        carIDs: filteredRequest.CarID ? filteredRequest.CarID.split('|') : null,
         siteIDs: filteredRequest.SiteID ? filteredRequest.SiteID.split('|') : null,
         siteAreaIDs: filteredRequest.SiteAreaID ? filteredRequest.SiteAreaID.split('|') : null,
         companyIDs: filteredRequest.CompanyID ? filteredRequest.CompanyID.split('|') : null,
@@ -474,7 +477,10 @@ export default class ReservationService {
           fromDate: filteredRequest.StartDateTime ?? null,
           toDate: filteredRequest.EndDateTime ?? null,
         },
-        arrivalTime: filteredRequest.ArrivalTime ?? null,
+        slot: {
+          arrivalTime: filteredRequest.ArrivalTime ?? null,
+          departureTime: filteredRequest.DepartureTime ?? null,
+        },
         statuses: filteredRequest.Status ? filteredRequest.Status.split('|') : null,
         types: filteredRequest.Type ? filteredRequest.Type.split('|') : null,
         withUser: filteredRequest.WithUser,
@@ -608,11 +614,17 @@ export default class ReservationService {
         existingReservation,
         reservationToSave.status
       );
-      // In case the updated reservation changed the CS
+      // In case the updated reservation changed the CS or the time ranges
+      const [existingSlotStartTime, existingSlotEndTime] =
+        ReservationService.getSlotStartAndEndTime(existingReservation);
+      const [newSlotStartTime, newSlotEndTime] =
+        ReservationService.getSlotStartAndEndTime(reservationToSave);
       if (
         existingReservation.chargingStationID !== reservationToSave.chargingStationID ||
         existingReservation.connectorID !== reservationToSave.connectorID ||
-        moment(reservationToSave.fromDate).isAfter(existingReservation.toDate)
+        moment(reservationToSave.fromDate).isAfter(existingReservation.toDate) ||
+        moment(existingSlotStartTime).isAfter(newSlotStartTime) ||
+        moment(existingSlotEndTime).isAfter(newSlotEndTime)
       ) {
         await ReservationService.contactChargingStation(
           req,
@@ -781,11 +793,15 @@ export default class ReservationService {
       return ReservationStatusEnum.IN_PROGRESS;
     }
     const actualDate = moment();
-    if (actualDate.isBetween(reservation.fromDate, reservation.toDate)) {
+    const [slotStartTime, slotEndTime] = ReservationService.getSlotStartAndEndTime(reservation);
+    if (
+      actualDate.isBetween(slotStartTime, slotEndTime) &&
+      actualDate.isBetween(reservation.fromDate, reservation.toDate)
+    ) {
       return ReservationStatusEnum.IN_PROGRESS;
-    } else if (actualDate.isBefore(reservation.fromDate)) {
+    } else if (actualDate.isBefore(slotStartTime)) {
       return ReservationStatusEnum.SCHEDULED;
-    } else if (actualDate.isAfter(reservation.toDate)) {
+    } else if (actualDate.isAfter(slotEndTime) && actualDate.isAfter(reservation.toDate)) {
       return ReservationStatusEnum.EXPIRED;
     }
   }
@@ -819,7 +835,11 @@ export default class ReservationService {
         message: 'Charging Station is not connected to the backend',
       });
     }
-    if (moment().isBetween(moment(reservation.fromDate), moment(reservation.toDate))) {
+    const [slotStartTime, slotEndTime] = ReservationService.getSlotStartAndEndTime(reservation);
+    if (
+      moment().isBetween(slotStartTime, slotEndTime) &&
+      moment().isBetween(reservation.fromDate, reservation.toDate)
+    ) {
       if (
         [ServerAction.CHARGING_STATION_RESERVE_NOW, ServerAction.RESERVATION_CREATE].includes(
           action
@@ -827,7 +847,7 @@ export default class ReservationService {
       ) {
         response = await chargingStationClient.reserveNow({
           connectorId: reservation.connectorID,
-          expiryDate: reservation.expiryDate,
+          expiryDate: slotEndTime,
           idTag: reservation.idTag,
           parentIdTag: reservation.parentIdTag,
           reservationId: reservation.id,
@@ -912,6 +932,9 @@ export default class ReservationService {
           getDateCell(reservation.toDate, i18nManager),
           getDateCell(reservation.expiryDate, i18nManager),
           reservation.arrivalTime ? getDateCell(reservation.arrivalTime as Date, i18nManager) : '',
+          reservation.departureTime
+            ? getDateCell(reservation.departureTime as Date, i18nManager)
+            : '',
           reservation.idTag,
           reservation.parentIdTag ?? '',
           reservation.carID ?? '',
@@ -982,9 +1005,25 @@ export default class ReservationService {
       reservation.lastChangedBy = { id: req.user.id };
       reservation.lastChangedOn = new Date();
     } else {
+      reservation.id = Utils.getRandomIntSafe();
       reservation.createdBy = { id: req.user.id };
       reservation.createdOn = new Date();
     }
     return reservation;
+  }
+
+  private static getSlotStartTime(reservation: Reservation): Date {
+    return Utils.buildDateTimeObject(moment().toDate(), reservation.arrivalTime);
+  }
+
+  private static getSlotEndTime(reservation: Reservation): Date {
+    return Utils.buildDateTimeObject(moment().toDate(), reservation.departureTime);
+  }
+
+  private static getSlotStartAndEndTime(reservation: Reservation): [Date, Date] {
+    return [
+      ReservationService.getSlotStartTime(reservation),
+      ReservationService.getSlotEndTime(reservation),
+    ];
   }
 }

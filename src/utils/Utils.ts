@@ -10,7 +10,7 @@ import { Promise } from 'bluebird';
 import { Decimal } from 'decimal.js';
 import { Request } from 'express';
 import _ from 'lodash';
-import moment from 'moment';
+import moment, { Moment } from 'moment';
 import { nanoid } from 'nanoid';
 import passwordGenerator from 'password-generator';
 import QRCode from 'qrcode';
@@ -2125,8 +2125,22 @@ export default class Utils {
     return `${hours} h ${minutes.format('mm')} min`;
   }
 
-  public static buildTimeObject(hour: number, minute: number, date?: Date): Date {
-    return moment({ hour, minute }).toDate();
+  public static buildDateTimeObject(
+    date: Date,
+    time: Date | string,
+    hours?: number,
+    minutes?: number,
+    format = 'HH:mm'
+  ): Date {
+    let parsedDateTime: Moment;
+    if (time && typeof time === 'string') {
+      parsedDateTime = moment(time, format);
+    } else if (hours && minutes) {
+      parsedDateTime = moment({ hours, minutes });
+    } else {
+      parsedDateTime = moment(time);
+    }
+    return moment(date).hours(parsedDateTime.hours()).minutes(parsedDateTime.minutes()).toDate();
   }
 
   private static hashCode(s: string): number {

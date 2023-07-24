@@ -5,6 +5,8 @@ import HttpDatabaseRequest from './HttpDatabaseRequest';
 export interface HttpReservationGetRequest extends HttpByIDRequest {
   WithUser?: boolean;
   WithChargingStation?: boolean;
+  WithSite?: boolean;
+  WithSiteArea?: boolean;
   WithCar?: boolean;
   WithTag?: boolean;
 }

@@ -1683,6 +1683,10 @@ export default class ChargingStationService {
       req.tenant,
       {
         dateRange: { fromDate: filteredRequest.FromDate, toDate: filteredRequest.ToDate },
+        slot: {
+          arrivalTime: filteredRequest.ArrivalTime,
+          departureTime: filteredRequest.DepartureTime,
+        },
         statuses: [ReservationStatus.SCHEDULED, ReservationStatus.IN_PROGRESS],
       },
       Constants.DB_PARAMS_MAX_LIMIT

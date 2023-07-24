@@ -230,7 +230,7 @@ export interface HttpChargingStationReserveNowRequest {
     visualTagID: string;
     carID?: string;
     parentIdTag?: string;
-    reservationId: number;
+    reservationId?: number;
   };
 }
 
@@ -265,4 +265,6 @@ export interface HttpChargingStationDiagnosticsGetRequest
 export interface HttpReservableChargingStationsGetRequest extends HttpChargingStationsGetRequest {
   FromDate: Date;
   ToDate: Date;
+  ArrivalTime?: Date;
+  DepartureTime?: Date;
 }

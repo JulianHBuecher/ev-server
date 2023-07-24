@@ -35,14 +35,13 @@ export default class CheckReservationStatusTask extends TenantSchedulerTask {
     );
     if (await LockingManager.acquire(expiredReservationsLock)) {
       try {
-        const actualDate = moment().toDate();
         const expiredReservations = await ReservationStorage.getReservations(
           tenant,
           {
             withChargingStation: true,
             withTag: true,
             withUser: true,
-            expiryDate: actualDate,
+            expiryDate: moment().toDate(),
             statuses: [ReservationStatus.IN_PROGRESS, ReservationStatus.SCHEDULED],
           },
           Constants.DB_PARAMS_MAX_LIMIT

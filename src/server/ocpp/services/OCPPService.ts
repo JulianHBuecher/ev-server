@@ -2929,18 +2929,27 @@ export default class OCPPService {
     transaction: OCPPStartTransactionRequestExtended
   ) {
     if (!transaction.reservationId) {
-      const reservations = await ReservationStorage.getReservationsByDate(
+      const upcomingReservations = await ReservationStorage.getReservations(
         tenant,
-        moment().toDate(),
-        moment().add(1, 'hour').toDate()
+        {
+          withChargingStation: true,
+          withTag: true,
+          withUser: true,
+          dateRange: {
+            fromDate: moment().toDate(),
+          },
+          slot: {
+            arrivalTime: moment().toDate(),
+            departureTime: moment().add(1, 'h').toDate(),
+          },
+          statuses: [ReservationStatus.SCHEDULED],
+        },
+        Constants.DB_PARAMS_MAX_LIMIT
       );
-      const upcomingReservations = reservations.filter(
-        (reservation) => reservation.status === ReservationStatus.SCHEDULED
-      );
-      if (upcomingReservations.length > 0) {
+      if (upcomingReservations.count > 0) {
         const reservation = await ReservationStorage.getReservation(
           tenant,
-          upcomingReservations[0].id,
+          upcomingReservations.result[0].id,
           {
             withTag: true,
             withUser: true,
@@ -2959,7 +2968,7 @@ export default class OCPPService {
       );
       if (
         reservation.type === ReservationType.RESERVE_NOW ||
-        moment().diff(reservation.toDate, 'days') === 0
+        moment(reservation.toDate).diff(moment(reservation.fromDate), 'days') === 0
       ) {
         reservation.status = ReservationStatus.DONE;
       }
