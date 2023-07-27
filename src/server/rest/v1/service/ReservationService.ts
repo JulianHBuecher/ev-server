@@ -95,7 +95,6 @@ export default class ReservationService {
     const reservations = await ReservationService.getReservations(
       req,
       filteredRequest,
-      action,
       Action.LIST
     );
     res.json(reservations);
@@ -255,7 +254,7 @@ export default class ReservationService {
       res,
       'exported-reservations.csv',
       filteredRequest,
-      ReservationService.getReservations.bind(this, req, filteredRequest),
+      ReservationService.getReservations.bind(this, req, filteredRequest, Action.EXPORT),
       ReservationService.convertToCSV.bind(this)
     );
   }
@@ -444,7 +443,6 @@ export default class ReservationService {
   private static async getReservations(
     req: Request,
     filteredRequest: HttpReservationsGetRequest,
-    action: ServerAction = ServerAction.RESERVATIONS,
     authAction: Action = Action.LIST,
     additionalFilters: Record<string, any> = {}
   ): Promise<ReservationDataResult> {
@@ -916,6 +914,7 @@ export default class ReservationService {
         'toDate',
         'expiryDate',
         'arrivalTime',
+        'departureTime',
         'idTag',
         'parentIdTag',
         'car',

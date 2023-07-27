@@ -68,8 +68,3 @@ export interface ImportedReservation {
     autoActivateReservationAtImport: boolean;
   };
 }
-
-export interface TimeObject {
-  hour: number;
-  minute: number;
-}
