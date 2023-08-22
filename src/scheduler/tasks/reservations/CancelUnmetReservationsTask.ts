@@ -4,6 +4,7 @@ import ChargingStationClientFactory from '../../../client/ocpp/ChargingStationCl
 import LockingManager from '../../../locking/LockingManager';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
 import { LockEntity } from '../../../types/Locking';
+import { ChargePointStatus } from '../../../types/ocpp/OCPPServer';
 import Reservation, { ReservationStatus } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import { TaskConfig } from '../../../types/TaskConfig';
@@ -59,7 +60,14 @@ export default class CancelUnmetReservationsTask extends TenantSchedulerTask {
               moment().toDate(),
               reservation.arrivalTime
             );
-            if (moment().diff(moment(currentArrivalTime), 'minutes') < THRESH_HOLD) {
+            const connector = Utils.getConnectorFromID(
+              reservation.chargingStation,
+              reservation.connectorID
+            );
+            if (
+              moment().diff(moment(currentArrivalTime), 'minutes') < THRESH_HOLD ||
+              connector.status !== ChargePointStatus.RESERVED
+            ) {
               return;
             }
             const chargingStationClient =
