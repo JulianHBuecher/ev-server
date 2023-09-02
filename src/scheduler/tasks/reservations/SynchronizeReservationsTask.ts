@@ -5,7 +5,6 @@ import LockingManager from '../../../locking/LockingManager';
 import ReservationService from '../../../server/rest/v1/service/ReservationService';
 import ReservationStorage from '../../../storage/mongodb/ReservationStorage';
 import { LockEntity } from '../../../types/Locking';
-import { ChargePointStatus } from '../../../types/ocpp/OCPPServer';
 import Reservation, { ReservationStatus } from '../../../types/Reservation';
 import { ServerAction } from '../../../types/Server';
 import { TaskConfig } from '../../../types/TaskConfig';
@@ -110,11 +109,6 @@ export default class SynchronizeReservationsTask extends TenantSchedulerTask {
           const oldStatus = reservation.status;
           reservation.status = ReservationStatus.IN_PROGRESS;
           if (oldStatus !== reservation.status) {
-            NotificationHelper.notifyReservationStatusChanged(
-              tenant,
-              reservation.tag.user,
-              reservation
-            );
             NotificationHelper.notifyReservationUpcoming(tenant, reservation.tag.user, reservation);
             await ReservationStorage.saveReservation(tenant, reservation);
           }

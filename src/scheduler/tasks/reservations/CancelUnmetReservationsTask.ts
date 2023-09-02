@@ -16,7 +16,7 @@ import Utils from '../../../utils/Utils';
 import TenantSchedulerTask from '../../TenantSchedulerTask';
 
 const MODULE_NAME = 'CancelUnmetReservationsTask';
-const THRESH_HOLD = 15;
+const THRESHOLD = 15;
 
 export default class CancelUnmetReservationsTask extends TenantSchedulerTask {
   public async processTenant(tenant: Tenant, config: TaskConfig): Promise<void> {
@@ -47,7 +47,7 @@ export default class CancelUnmetReservationsTask extends TenantSchedulerTask {
               fromDate: moment().toDate(),
             },
             slot: {
-              arrivalTime: moment().subtract(15, 'minutes').toDate(),
+              arrivalTime: moment().subtract(THRESHOLD, 'minutes').toDate(),
             },
             statuses: [ReservationStatus.IN_PROGRESS],
           },
@@ -65,10 +65,10 @@ export default class CancelUnmetReservationsTask extends TenantSchedulerTask {
               reservation.connectorID
             );
             if (
-              moment().diff(moment(currentArrivalTime), 'minutes') < THRESH_HOLD ||
+              moment().diff(moment(currentArrivalTime), 'minutes') < THRESHOLD ||
               connector.status !== ChargePointStatus.RESERVED
             ) {
-              return;
+              continue;
             }
             const chargingStationClient =
               await ChargingStationClientFactory.getChargingStationClient(
@@ -81,11 +81,6 @@ export default class CancelUnmetReservationsTask extends TenantSchedulerTask {
             });
             if (response.status.toUpperCase() === 'ACCEPTED') {
               NotificationHelper.notifyReservationUnmet(tenant, reservation.tag.user, reservation);
-              NotificationHelper.notifyReservationStatusChanged(
-                tenant,
-                reservation.tag.user,
-                reservation
-              );
               reservationsToUpdate.push(reservation);
             }
           }

@@ -175,7 +175,7 @@
     },
     "reservationUpcomingNotification": {
       "title": "Anstehende Reservierung",
-      "body": "Ihre Reservierung der Ladestation '{{chargingStationID}}' an Anschliss '{{connectorID}}' steht unmittelbar bevor."
+      "body": "Ihre Reservierung der Ladestation '{{chargingStationID}}' an Anschluss '{{connectorID}}' steht unmittelbar bevor."
     },
     "reservationUpcomingWarning": {
       "title": "Anstehende Reservierung",

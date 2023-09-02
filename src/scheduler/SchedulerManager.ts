@@ -34,7 +34,7 @@ import OICPPushEvseDataTask from './tasks/oicp/OICPPushEvseDataTask';
 import OICPPushEvseStatusTask from './tasks/oicp/OICPPushEvseStatusTask';
 import CancelUnmetReservationsTask from './tasks/reservations/CancelUnmetReservationsTask';
 import CheckReservationStatusTask from './tasks/reservations/CheckReservationStatusTask';
-import SynchronizeReservationsTask from './tasks/reservations/ScheduleReservationsTask';
+import SynchronizeReservationsTask from './tasks/reservations/SynchronizeReservationsTask';
 import SynchronizeCarsTask from './tasks/SynchronizeCarsTask';
 import SynchronizeRefundTransactionsTask from './tasks/SynchronizeRefundTransactionsTask';
 
